@@ -105,6 +105,7 @@ private:
     void buildPerPixBlinnTm(SLVLight* lights);
     void buildPerPixBlinn(SLVLight* lights);
 
+    void buildPerPixCookTorranceTm(SLVLight* lights);
     void buildPerPixCookTorrance(SLVLight* lights);
 
     // Helpers
