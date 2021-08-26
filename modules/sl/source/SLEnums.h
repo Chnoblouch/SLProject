@@ -107,6 +107,8 @@ enum SLSceneID
     SID_ShaderPerVertexWave,
     SID_ShaderCook,
     SID_ShaderIBL,
+    SID_ShaderCookAuto,
+    SID_ShaderIBLAuto,
     SID_ShaderBumpNormal,
     SID_ShaderBumpParallax,
     SID_ShaderSkyBox,

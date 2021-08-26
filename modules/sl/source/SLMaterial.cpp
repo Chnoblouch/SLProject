@@ -320,6 +320,7 @@ SLMaterial::SLMaterial(SLAssetManager* am,
                        SLGLTexture*    prefilterIrradianceMap,
                        SLGLTexture*    brdfLUTTexture) : SLObject(name)
 {
+    _assetManager = am;
     _ambient.set(0, 0, 0); // not used in Cook-Torrance
     _diffuse = diffuse;
     _specular.set(1, 1, 1);                   // not used in Cook-Torrance
@@ -327,12 +328,47 @@ SLMaterial::SLMaterial(SLAssetManager* am,
     _shininess = (1.0f - roughness) * 500.0f; // not used in Cook-Torrance
     _roughness = roughness;
     _metalness = metalness;
+    _lightModel = LM_CookTorrance;
 
     _kr = 0.0f;
     _kt = 0.0f;
     _kn = 1.0f;
 
     _program = pbrIblShaderProg;
+
+    if (irrandianceMap) _textures[irrandianceMap->texType()].push_back(irrandianceMap);
+    if (prefilterIrradianceMap) _textures[prefilterIrradianceMap->texType()].push_back(prefilterIrradianceMap);
+    if (brdfLUTTexture) _textures[brdfLUTTexture->texType()].push_back(brdfLUTTexture);
+
+    // Add pointer to the global resource vectors for deallocation
+    if (am)
+        am->materials().push_back(this);
+}
+//-----------------------------------------------------------------------------
+//! Ctor for PBR shading with IBL without textures
+SLMaterial::SLMaterial(SLAssetManager* am,
+                       const SLchar*   name,
+                       SLCol4f         diffuse,
+                       SLfloat         roughness,
+                       SLfloat         metalness,
+                       SLGLTexture*    irrandianceMap,
+                       SLGLTexture*    prefilterIrradianceMap,
+                       SLGLTexture*    brdfLUTTexture) : SLObject(name)
+{
+    _assetManager = am;
+    _ambient.set(0, 0, 0); // not used in Cook-Torrance
+    _diffuse = diffuse;
+    _specular.set(1, 1, 1);                   // not used in Cook-Torrance
+    _emissive.set(0, 0, 0, 0);                // not used in Cook-Torrance
+    _shininess = (1.0f - roughness) * 500.0f; // not used in Cook-Torrance
+    _roughness = roughness;
+    _metalness = metalness;
+    _lightModel = LM_CookTorrance;
+    _program = nullptr;
+
+    _kr = 0.0f;
+    _kt = 0.0f;
+    _kn = 1.0f;
 
     if (irrandianceMap) _textures[irrandianceMap->texType()].push_back(irrandianceMap);
     if (prefilterIrradianceMap) _textures[prefilterIrradianceMap->texType()].push_back(prefilterIrradianceMap);
@@ -356,6 +392,7 @@ SLMaterial::SLMaterial(SLAssetManager* am,
                        SLGLTexture*    texture7,
                        SLGLTexture*    texture8) : SLObject(name)
 {
+    _assetManager = am;
     _ambient.set(1, 1, 1);
     _diffuse.set(1, 1, 1);
     _specular.set(1, 1, 1);
@@ -364,7 +401,7 @@ SLMaterial::SLMaterial(SLAssetManager* am,
     _roughness = 0.5f;
     _metalness = 0.0f;
     _nbTextures = 0;
-    _lightModel   = LM_BlinnPhong;
+    _lightModel = LM_CookTorrance;
     if (texture1)
     {
         _textures[texture1->texType()].push_back(texture1);
@@ -411,6 +448,82 @@ SLMaterial::SLMaterial(SLAssetManager* am,
     _kt        = 0.0f;
     _kn        = 1.0f;
     _diffuse.w = 1.0f - _kt;
+
+    // Add pointer to the global resource vectors for deallocation
+    if (am)
+        am->materials().push_back(this);
+}
+
+
+//-----------------------------------------------------------------------------
+// Ctor for textures with PBR materials
+SLMaterial::SLMaterial(SLAssetManager* am,
+                       const SLchar*   name,
+                       SLGLTexture*    texture1,
+                       SLGLTexture*    texture2,
+                       SLGLTexture*    texture3,
+                       SLGLTexture*    texture4,
+                       SLGLTexture*    texture5,
+                       SLGLTexture*    texture6,
+                       SLGLTexture*    texture7,
+                       SLGLTexture*    texture8) : SLObject(name)
+{
+    _assetManager = am;
+    _ambient.set(1, 1, 1);
+    _diffuse.set(1, 1, 1);
+    _specular.set(1, 1, 1);
+    _emissive.set(0, 0, 0, 0);
+    _shininess = 125;
+    _roughness = 0.5f;
+    _metalness = 0.0f;
+    _nbTextures = 0;
+    _lightModel = LM_CookTorrance;
+    if (texture1)
+    {
+        _textures[texture1->texType()].push_back(texture1);
+        _nbTextures++;
+    }
+    if (texture2)
+    {
+        _textures[texture2->texType()].push_back(texture2);
+        _nbTextures++;
+    }
+    if (texture3)
+    {
+        _textures[texture3->texType()].push_back(texture3);
+        _nbTextures++;
+    }
+    if (texture4)
+    {
+        _textures[texture4->texType()].push_back(texture4);
+        _nbTextures++;
+    }
+    if (texture5)
+    {
+        _textures[texture5->texType()].push_back(texture5);
+        _nbTextures++;
+    }
+    if (texture6)
+    {
+        _textures[texture6->texType()].push_back(texture6);
+        _nbTextures++;
+    }
+    if (texture7)
+    {
+        _textures[texture7->texType()].push_back(texture7);
+        _nbTextures++;
+    }
+    if (texture8)
+    {
+        _textures[texture8->texType()].push_back(texture8);
+        _nbTextures++;
+    }
+
+    _kr        = 0.0f;
+    _kt        = 0.0f;
+    _kn        = 1.0f;
+    _diffuse.w = 1.0f - _kt;
+    _program = nullptr;
 
     // Add pointer to the global resource vectors for deallocation
     if (am)
@@ -467,6 +580,7 @@ void SLMaterial::activate(SLCamera* cam, SLVLight* lights)
     // A 3D object can be stored without material or shader program information.
     if (!_program)
     {
+
         // Check first the asset manager if the requested program type already exists
         string programName;
         SLGLProgramGenerated::buildProgramName(this, lights, programName);
@@ -474,7 +588,9 @@ void SLMaterial::activate(SLCamera* cam, SLVLight* lights)
 
         // If the program was not found by name generate a new one
         if (!_program)
+        {
             _program = new SLGLProgramGenerated(_assetManager, programName, this, lights);
+        }
     }
 
     // Check if shader had compile error and the error texture should be shown
@@ -488,6 +604,7 @@ void SLMaterial::activate(SLCamera* cam, SLVLight* lights)
     }
 
     // Activate the shader program now
+
     _program->beginUse(cam, this, lights);
 }
 //-----------------------------------------------------------------------------
