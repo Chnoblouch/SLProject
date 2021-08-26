@@ -1750,8 +1750,8 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
         scene->addChild(cam1);
 
         // Create spheres and materials with roughness & metallic values between 0 and 1
-        const SLint nrRows  = 10;
-        const SLint nrCols  = 10;
+        const SLint nrRows  = 2;
+        const SLint nrCols  = 2;
         SLfloat     spacing = 2.5f;
         SLfloat     maxX    = (nrCols / 2) * spacing;
         SLfloat     maxY    = (nrRows / 2) * spacing;
@@ -1766,15 +1766,17 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
             SLfloat x = -maxX;
             for (SLint r = 0; r < nrCols; ++r)
             {
-                    // Cook-Torrance material with IBL but without textures
-                    mat[i] = new SLMaterial(s,
-                                            "IBLMat",
-                                            SLCol4f::WHITE * 0.5f,
-                                            Utils::clamp((float)r * deltaR, 0.05f, 1.0f),
-                                            (float)m * deltaM,
-                                            irrandianceMap,
-                                            prefilterMap,
-                                            brdfLUTTexture);
+                // Cook-Torrance material with IBL but without textures
+                mat[i] = new SLMaterial(s,
+                                        "IBLTexMat",
+                                        new SLGLTexture(s, texPath + "gold-scuffed_2048C.png"),
+                                        new SLGLTexture(s, texPath + "gold-scuffed_2048N.png"),
+                                        new SLGLTexture(s, texPath + "gold-scuffed_2048M.png"),
+                                        new SLGLTexture(s, texPath + "gold-scuffed_2048R.png"),
+                                        new SLGLTexture(s, texPath + "gold-scuffed_2048A.png"),
+                                        irrandianceMap,
+                                        prefilterMap,
+                                        brdfLUTTexture);
 
                 SLNode* node = new SLNode(new SLSpheric(s,
                                                         1.0f,
