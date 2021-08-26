@@ -624,7 +624,7 @@ void SLMaterial::passToUniforms(SLGLProgram* program)
     program->uniform1f("u_matKt", _kt);
     program->uniform1f("u_matKn", _kn);
     program->uniform1i("u_matGetsShadows", _getsShadows);
-
+    static int pass;
     // pass textures unit id to the sampler uniform
     SLuint texUnit = 0;
     for (SLuint i = 0; i < TT_nbTextureType; i++)
@@ -694,7 +694,7 @@ void SLMaterial::passToUniforms(SLGLProgram* program)
                 }
             }
 
-            if (program->uniform1i(name, texUnit) < 0)
+            if (program->uniform1i(name, texUnit) < 0 && pass < 5)
             {
                 Utils::log("Material", "texture name %s not found", name);
             }
@@ -703,6 +703,7 @@ void SLMaterial::passToUniforms(SLGLProgram* program)
         }
     }
 
+    pass++;
     program->uniform1i("u_matHasTexture", texUnit ? 1 : 0);
 }
 //-----------------------------------------------------------------------------

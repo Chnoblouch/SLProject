@@ -193,12 +193,12 @@ const string fragInputs_u_matCookTorranceTextures = R"(
 uniform sampler2D u_matTextureRoughness0;
 uniform sampler2D u_matTextureMetallic0;
 uniform sampler2D u_matTextureHDR0;
-uniform sampler2D u_matTextureBRDF0;
 )";
 
 const string fragInputs_u_matCookTorranceEnvironnment = R"(
-uniform sampler2D u_matTextureIrradianceCubemap0;
-uniform sampler2D u_matTextureRoughnessCubemap0;
+uniform samplerCube u_matTextureIrradianceCubemap0;
+uniform samplerCube u_matTextureRoughnessCubemap0;
+uniform sampler2D u_matTextureBRDF0;
 )";
 
 //-----------------------------------------------------------------------------
@@ -784,13 +784,68 @@ const string fragMainCookTorrance_3_FragColorTm      = R"(
     vec3 kS = F;
     vec3 kD = 1.0 - kS;
     kD *= 1.0 - u_matMetal;
+    vec3 irradiance = texture(u_matTextureIrradianceCubemap0, N).rgb;
+    vec3 diffuse    = kD * irradiance * u_matDiff.rgb;
+
+    // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
+    const float MAX_REFLECTION_LOD = 4.0;
+    vec3 prefilteredColor = textureLod(u_matTextureRoughnessCubemap0, v_R_OS, u_matRough * MAX_REFLECTION_LOD).rgb;
+    vec2 brdf = texture(u_matTextureBRDF0, vec2(max(dot(N, E), 0.0), u_matRough)).rg;
+    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+    vec3 ambient = (diffuse + specular);
+
+    vec3 color = ambient + Lo;
+    
+    // Exposure tone mapping
+    vec3 mapped = vec3(1.0) - exp(-color * u_exposure);
+    o_fragColor = vec4(mapped, 1.0);
+ 
+    // For correct alpha blending overwrite alpha component
+    o_fragColor.a = u_matDiff.a;
+)";
+
+//-----------------------------------------------------------------------------
+const string fragMainCookTorrance_3_FragColorEv      = R"(
+
+    // Build diffuse reflection for environment light map
+    vec3 F = fresnelSchlickRoughness(max(dot(N, E), 0.0), F0, u_matRough);
+    vec3 kS = F;
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - u_matMetal;
+    vec3 irradiance = texture(u_matTextureIrradianceCubemap0, N).rgb;
+    vec3 diffuse    = kD * irradiance * u_matDiff.rgb;
+
+    // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
+    const float MAX_REFLECTION_LOD = 4.0;
+    vec3 prefilteredColor = textureLod(u_matTextureRoughnessCubemap0, v_R_OS, u_matRough * MAX_REFLECTION_LOD).rgb;
+    vec2 brdf = texture(u_matTextureBRDF0, vec2(max(dot(N, E), 0.0), u_matRough)).rg;
+    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+    vec3 ambient = (diffuse + specular);
+
+    vec3 color = ambient + Lo;
+    
+    // Exposure tone mapping
+    vec3 mapped = vec3(1.0) - exp(-color * u_exposure);
+    o_fragColor = vec4(mapped, 1.0);
+ 
+    // For correct alpha blending overwrite alpha component
+    o_fragColor.a = u_matDiff.a;
+)";
+//-----------------------------------------------------------------------------
+const string fragMainCookTorrance_3_FragColorTmEv      = R"(
+
+    // Build diffuse reflection for environment light map
+    vec3 F = fresnelSchlickRoughness(max(dot(N, E), 0.0), F0, u_matRough);
+    vec3 kS = F;
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - u_matMetal;
     vec3 irradiance = texture(u_matTextureDiffuse0, N).rgb;
     vec3 diffuse    = kD * irradiance * u_matDiff.rgb;
 
     // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
     const float MAX_REFLECTION_LOD = 4.0;
-    vec3 prefilteredColor = textureLod(u_matTextureRoughtness0, v_R_OS, u_matRough * MAX_REFLECTION_LOD).rgb;
-    vec2 brdf = texture(u_matTextureBRDF, vec2(max(dot(N, E), 0.0), u_matRough)).rg;
+    vec3 prefilteredColor = textureLod(u_matTextureRoughnessCubemap0, v_R_OS, u_matRough * MAX_REFLECTION_LOD).rgb;
+    vec2 brdf = texture(u_matTextureBRDF0, vec2(max(dot(N, E), 0.0), u_matRough)).rg;
     vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
     vec3 ambient = (diffuse + specular);
 
@@ -816,8 +871,8 @@ const string fragMainCookTorrance_3_FragColorTmAo      = R"(
 
     // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
     const float MAX_REFLECTION_LOD = 4.0;
-    vec3 prefilteredColor = textureLod(u_matTextureRoughtness0, v_R_OS, u_matRough * MAX_REFLECTION_LOD).rgb;
-    vec2 brdf = texture(u_matTextureBRDF, vec2(max(dot(N, E), 0.0), u_matRough)).rg;
+    vec3 prefilteredColor = textureLod(u_matTextureRoughnessCubemap0, v_R_OS, u_matRough * MAX_REFLECTION_LOD).rgb;
+    vec2 brdf = texture(u_matTextureBRDF0, vec2(max(dot(N, E), 0.0), u_matRough)).rg;
     vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
     vec3 ambient = (diffuse + specular) * AO;
 
@@ -1147,6 +1202,7 @@ void SLGLProgramGenerated::buildProgramCode(SLMaterial* mat,
     bool Nm = mat->hasTextureType(TT_normal);
     bool Hm = mat->hasTextureType(TT_height);
     bool Ao = mat->hasTextureType(TT_ambientOcclusion);
+    bool Ev = mat->hasTextureType(TT_irradianceCubemap);
 
     // Check if any of the scene lights does shadow mapping
     bool Sm = lightsDoShadowMapping(lights);
@@ -1188,13 +1244,15 @@ void SLGLProgramGenerated::buildProgramCode(SLMaterial* mat,
     }
     else if (mat->lightModel() == LM_CookTorrance)
     {
-        std::cout << "LM COOK TORRENCE" << std::endl;
         if (Tm && Ao)
             buildPerPixCookTorranceTmAo(lights);
         else if (Tm)
             buildPerPixCookTorranceTm(lights);
+        else if (Ev)
+            buildPerPixCookTorranceEv(lights);
         else
             buildPerPixCookTorrance(lights);
+
     }
     else
         SL_EXIT_MSG("Only Blinn-Phong supported yet.");
@@ -1202,7 +1260,6 @@ void SLGLProgramGenerated::buildProgramCode(SLMaterial* mat,
 
 void SLGLProgramGenerated::buildPerPixCookTorranceTmAo(SLVLight* lights)
 {
-    std::cout << "cook torrence tm ao" << std::endl;
     assert(_shaders.size() > 1 &&
            _shaders[0]->type() == ST_vertex &&
            _shaders[1]->type() == ST_fragment);
@@ -1242,10 +1299,51 @@ in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
     fragCode += fragMainBlinn_4_End;
     addCodeToShader(_shaders[1], fragCode, _name + ".frag");
 }
+void SLGLProgramGenerated::buildPerPixCookTorranceEv(SLVLight* lights)
+{
+    std::cout << "cook torrance ev" << std::endl;
+    assert(_shaders.size() > 1 &&
+           _shaders[0]->type() == ST_vertex &&
+           _shaders[1]->type() == ST_fragment);
+
+    // Assemble vertex shader code
+    string vertCode;
+    vertCode += shaderHeader((int)lights->size());
+    vertCode += vertInputs_a_pn;
+    vertCode += vertInputs_u_matrices;
+    vertCode += vertOutputs_v_P_VS;
+    vertCode += vertOutputs_v_N_VS;
+    vertCode += vertMainBlinn_BeginAll;
+    vertCode += vertMainBlinn_v_N_VS;
+    vertCode += vertMainBlinn_EndAll;
+    addCodeToShader(_shaders[0], vertCode, _name + ".vert");
+
+    // Assemble fragment shader code
+    string fragCode;
+    fragCode += shaderHeader((int)lights->size());
+    fragCode += R"(
+in      vec3        v_P_VS;     // Interpol. point of illumination in view space (VS)
+in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
+)";
+    fragCode += fragInputs_u_lightAll;
+    fragCode += fragInputs_u_matAllCookTorrance;
+    fragCode += fragInputs_u_matCookTorranceEnvironnment;
+    fragCode += fragInputs_u_cam;
+    fragCode += fragOutputs_o_fragColor;
+    fragCode += fragCookTorrenceFunctions;
+    fragCode += fragFunctionFogBlend;
+    fragCode += fragFunctionDoStereoSeparation;
+    fragCode += fragMainBlinn_0_IntensityDeclaration;
+    fragCode += fragMainBlinn_1_EN_fromVert;
+    fragCode += fragMainCookTorrance_2_LightLoop;
+    fragCode += fragMainCookTorrance_3_FragColorEv;
+    fragCode += fragMainBlinn_4_End;
+    addCodeToShader(_shaders[1], fragCode, _name + ".frag");
+}
+
 
 void SLGLProgramGenerated::buildPerPixCookTorranceTm(SLVLight* lights)
 {
-    std::cout << "cook torrence tm" << std::endl;
     assert(_shaders.size() > 1 &&
            _shaders[0]->type() == ST_vertex &&
            _shaders[1]->type() == ST_fragment);
