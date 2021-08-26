@@ -1750,13 +1750,13 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
         scene->addChild(cam1);
 
         // Create spheres and materials with roughness & metallic values between 0 and 1
-        const SLint nrRows  = 1;
-        const SLint nrCols  = 1;
+        const SLint nrRows  = 10;
+        const SLint nrCols  = 10;
         SLfloat     spacing = 2.5f;
         SLfloat     maxX    = (nrCols / 2) * spacing;
         SLfloat     maxY    = (nrRows / 2) * spacing;
-        SLfloat     deltaR  = 1.0f / (float)(nrRows - 1);
-        SLfloat     deltaM  = 1.0f / (float)(nrCols - 1);
+        SLfloat     deltaR  = 1.0f / (float)(nrRows + 1);
+        SLfloat     deltaM  = 1.0f / (float)(nrCols + 1);
 
         SLMaterial* mat[nrRows * nrCols];
         SLint       i = 0;
