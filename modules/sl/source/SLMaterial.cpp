@@ -478,6 +478,7 @@ SLMaterial::SLMaterial(SLAssetManager* am,
     _metalness = 0.0f;
     _nbTextures = 0;
     _lightModel = LM_CookTorrance;
+
     if (texture1)
     {
         _textures[texture1->texType()].push_back(texture1);
