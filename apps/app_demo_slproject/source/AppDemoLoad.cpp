@@ -1542,8 +1542,8 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
         scene->addChild(cam1);
 
         // Create spheres and materials with roughness & metallic values between 0 and 1
-        const SLint nrRows  = 7;
-        const SLint nrCols  = 7;
+        const SLint nrRows  = 20;
+        const SLint nrCols  = 20;
         SLfloat     spacing = 2.5f;
         SLfloat     maxX    = (nrCols / 2) * spacing;
         SLfloat     maxY    = (nrRows / 2) * spacing;
@@ -1750,13 +1750,13 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
         scene->addChild(cam1);
 
         // Create spheres and materials with roughness & metallic values between 0 and 1
-        const SLint nrRows  = 2;
-        const SLint nrCols  = 2;
+        const SLint nrRows  = 10;
+        const SLint nrCols  = 10;
         SLfloat     spacing = 2.5f;
         SLfloat     maxX    = (nrCols / 2) * spacing;
         SLfloat     maxY    = (nrRows / 2) * spacing;
-        SLfloat     deltaR  = 1.0f / (float)(nrRows + 1);
-        SLfloat     deltaM  = 1.0f / (float)(nrCols + 1);
+        SLfloat     deltaR  = 1.0f / (float)(nrRows);
+        SLfloat     deltaM  = 1.0f / (float)(nrCols);
 
         SLMaterial* mat[nrRows * nrCols];
         SLint       i = 0;
@@ -1766,17 +1766,33 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
             SLfloat x = -maxX;
             for (SLint r = 0; r < nrCols; ++r)
             {
-                // Cook-Torrance material with IBL but without textures
-                mat[i] = new SLMaterial(s,
-                                        "IBLTexMat",
-                                        new SLGLTexture(s, texPath + "gold-scuffed_2048C.png"),
-                                        new SLGLTexture(s, texPath + "gold-scuffed_2048N.png"),
-                                        new SLGLTexture(s, texPath + "gold-scuffed_2048M.png"),
-                                        new SLGLTexture(s, texPath + "gold-scuffed_2048R.png"),
-                                        new SLGLTexture(s, texPath + "gold-scuffed_2048A.png"),
-                                        irrandianceMap,
-                                        prefilterMap,
-                                        brdfLUTTexture);
+                if (m == nrRows / 2 && r == nrCols / 2)
+                {
+                    // The center sphere has roughness and metallic encoded in textures
+                    // and the prefiltered textures for IBL
+                    mat[i] = new SLMaterial(s,
+                                            "IBLMatTex",
+                                            new SLGLTexture(s, texPath + "gold-scuffed_2048C.png"),
+                                            new SLGLTexture(s, texPath + "gold-scuffed_2048N.png"),
+                                            new SLGLTexture(s, texPath + "gold-scuffed_2048M.png"),
+                                            new SLGLTexture(s, texPath + "gold-scuffed_2048R.png"),
+                                            new SLGLTexture(s, texPath + "gold-scuffed_2048A.png"),
+                                            irrandianceMap,
+                                            prefilterMap,
+                                            brdfLUTTexture);
+                }
+                else
+                {
+                    // Cook-Torrance material with IBL but without textures
+                    mat[i] = new SLMaterial(s,
+                                            "IBLMat",
+                                            SLCol4f::WHITE * 0.5f,
+                                            Utils::clamp((float)r * deltaR, 0.05f, 1.0f),
+                                            (float)m * deltaM,
+                                            irrandianceMap,
+                                            prefilterMap,
+                                            brdfLUTTexture);
+                }
 
                 SLNode* node = new SLNode(new SLSpheric(s,
                                                         1.0f,

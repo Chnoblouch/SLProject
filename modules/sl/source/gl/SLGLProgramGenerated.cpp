@@ -679,7 +679,7 @@ const string fragMainCookTorrance_2_LightLoopTm   = R"(
 
     // Init Fresnel reflection at 90 deg. (0 to N)
     vec3 F0 = vec3(0.04);           
-    F0 = mix(F0, u_matDiff.rgb, u_matMetal);
+    F0 = mix(F0, matDiff.rgb, matMetal);
 
     // Get the reflection from all lights into Lo
     vec3 Lo = vec3(0.0);  
@@ -866,16 +866,16 @@ const string fragMainCookTorrance_3_FragColorTmEv      = R"(
     vec3 F = fresnelSchlickRoughness(max(dot(N, E), 0.0), F0, matRough);
     vec3 kS = F;
     vec3 kD = 1.0 - kS;
-    kD *= 1.0 - u_matMetal;
+    kD *= 1.0 - matMetal;
     vec3 irradiance = texture(u_matTextureIrradianceCubemap0, N).rgb;
-    vec3 diffuse    = kD * irradiance * u_matDiff.rgb;
+    vec3 diffuse    = kD * irradiance * matDiff.rgb;
 
     // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
     const float MAX_REFLECTION_LOD = 4.0;
     vec3 prefilteredColor = textureLod(u_matTextureRoughnessCubemap0, v_R_OS, matRough * MAX_REFLECTION_LOD).rgb;
     vec2 brdf = texture(u_matTextureBRDF0, vec2(max(dot(N, E), 0.0), matRough)).rg;
     vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
-    vec3 ambient = (diffuse + specular);
+    vec3 ambient = (kD * diffuse + specular);
 
     vec3 color = ambient + Lo;
     
@@ -883,8 +883,6 @@ const string fragMainCookTorrance_3_FragColorTmEv      = R"(
     vec3 mapped = vec3(1.0) - exp(-color * exposureToneMapping);
     o_fragColor = vec4(mapped, 1.0);
  
-    // For correct alpha blending overwrite alpha component
-    o_fragColor.a = matDiff.a;
 )";
 //-----------------------------------------------------------------------------
 const string fragMainBlinn_3_FragColor      = R"(
@@ -1268,11 +1266,14 @@ void SLGLProgramGenerated::buildPerPixCookTorranceEvTm(SLVLight* lights)
     vertCode += vertInputs_a_pn;
     vertCode += vertInputs_u_matrices;
     vertCode += vertInputs_u_matrices_extra;
+    vertCode += vertInputs_a_uv1;
     vertCode += vertOutputs_v_P_VS;
     vertCode += vertOutputs_v_N_VS;
+    vertCode += vertOutputs_v_uv1;
     vertCode += vertOutputs_v_R_OS;
     vertCode += vertMainBlinn_BeginAll;
     vertCode += vertMainBlinn_v_N_VS;
+    vertCode += vertMainBlinn_v_uv1;
     vertCode += vertMainBlinn_v_R_OS;
     vertCode += vertMainBlinn_EndAll;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
@@ -1284,11 +1285,12 @@ void SLGLProgramGenerated::buildPerPixCookTorranceEvTm(SLVLight* lights)
 in      vec3        v_P_VS;     // Interpol. point of illumination in view space (VS)
 in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
 in      vec3        v_R_OS;     // Interpol. reflect in object space
+in      vec2        v_uv1;      // Texture coordinate varying
 )";
     fragCode += fragInputs_u_lightAll;
-    fragCode += fragInputs_u_matAllCookTorrance;
     fragCode += fragInputs_u_matCookTorranceEnvironnment;
     fragCode += fragInputs_u_matCookTorranceTextures;
+    fragCode += fragInputs_u_matTm;
     fragCode += fragInputs_u_cam;
     fragCode += fragOutputs_o_fragColor;
     fragCode += fragCookTorrenceFunctions;
@@ -1297,10 +1299,9 @@ in      vec3        v_R_OS;     // Interpol. reflect in object space
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromVert;
     fragCode += fragMainCookTorrance_2_LightLoopTm;
-    fragCode += fragMainCookTorrance_3_FragColorEv;
+    fragCode += fragMainCookTorrance_3_FragColorTmEv;
     fragCode += fragMainBlinn_4_End;
     addCodeToShader(_shaders[1], fragCode, _name + ".frag");
-    std::cout << fragCode << std::endl;
 }
 
 void SLGLProgramGenerated::buildPerPixCookTorranceEv(SLVLight* lights)
@@ -1346,7 +1347,6 @@ in      vec3        v_R_OS;     // Interpol. reflect in object space
     fragCode += fragMainCookTorrance_3_FragColorEv;
     fragCode += fragMainBlinn_4_End;
     addCodeToShader(_shaders[1], fragCode, _name + ".frag");
-    std::cout << fragCode << std::endl;
 }
 
 void SLGLProgramGenerated::buildPerPixCookTorrance(SLVLight* lights)
