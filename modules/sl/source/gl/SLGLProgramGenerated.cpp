@@ -1267,7 +1267,9 @@ void SLGLProgramGenerated::buildProgramCode(SLMaterial* mat,
     }
     else if (mat->lightModel() == LM_CookTorrance)
     {
-        if (Ev && Tm && Ao)
+        if (Ev && Tm && Ao && Nm)
+            buildPerPixCookTorranceEvTmNmAo(lights);
+        else if (Ev && Tm && Ao)
             buildPerPixCookTorranceEvTmAo(lights);
         else if (Ev && Tm)
             buildPerPixCookTorranceEvTm(lights);
@@ -1279,6 +1281,62 @@ void SLGLProgramGenerated::buildProgramCode(SLMaterial* mat,
     }
     else
         SL_EXIT_MSG("Only Blinn-Phong supported yet.");
+}
+
+
+void SLGLProgramGenerated::buildPerPixCookTorranceEvTmNmAo(SLVLight* lights)
+{
+    assert(_shaders.size() > 1 &&
+           _shaders[0]->type() == ST_vertex &&
+           _shaders[1]->type() == ST_fragment);
+
+    // Assemble vertex shader code
+    string vertCode;
+    vertCode += shaderHeader((int)lights->size());
+    vertCode += vertInputs_a_pn;
+    vertCode += vertInputs_a_uv1;
+    vertCode += vertInputs_a_tangent;
+    vertCode += vertInputs_u_matrices;
+    vertCode += vertInputs_u_matrices_extra;
+    vertCode += vertInputs_u_lightNm;
+    vertCode += vertOutputs_v_P_VS;
+    vertCode += vertOutputs_v_N_VS;
+    vertCode += vertOutputs_v_uv1;
+    vertCode += vertOutputs_v_R_OS;
+    vertCode += vertOutputs_v_lightNm;
+    vertCode += vertMainBlinn_BeginAll;
+    vertCode += vertMainBlinn_v_N_VS;
+    vertCode += vertMainBlinn_v_uv1;
+    vertCode += vertMainBlinn_TBN_Nm;
+    vertCode += vertMainBlinn_v_R_OS;
+    vertCode += vertMainBlinn_EndAll;
+    addCodeToShader(_shaders[0], vertCode, _name + ".vert");
+
+    // Assemble fragment shader code
+    string fragCode;
+    fragCode += shaderHeader((int)lights->size());
+    fragCode += R"(
+in      vec3        v_P_VS;     // Interpol. point of illumination in view space (VS)
+in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
+in      vec3        v_R_OS;     // Interpol. reflect in object space
+in      vec2        v_uv1;      // Texture coordinate varying
+in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent space
+)";
+    fragCode += fragInputs_u_lightAll;
+    fragCode += fragInputs_u_matCookTorranceEnvironnment;
+    fragCode += fragInputs_u_matCookTorranceTextures;
+    fragCode += fragInputs_u_matTmNmAo;
+    fragCode += fragInputs_u_cam;
+    fragCode += fragOutputs_o_fragColor;
+    fragCode += fragCookTorrenceFunctions;
+    fragCode += fragFunctionFogBlend;
+    fragCode += fragFunctionDoStereoSeparation;
+    fragCode += fragMainBlinn_0_IntensityDeclaration;
+    fragCode += fragMainBlinn_1_EN_fromNm0;
+    fragCode += fragMainCookTorrance_2_LightLoopTm;
+    fragCode += fragMainCookTorrance_3_FragColorTmEvAo;
+    fragCode += fragMainBlinn_4_End;
+    addCodeToShader(_shaders[1], fragCode, _name + ".frag");
 }
 
 void SLGLProgramGenerated::buildPerPixCookTorranceEvTmAo(SLVLight* lights)
@@ -1330,6 +1388,7 @@ in      vec2        v_uv1;      // Texture coordinate varying
     fragCode += fragMainBlinn_4_End;
     addCodeToShader(_shaders[1], fragCode, _name + ".frag");
 }
+
 void SLGLProgramGenerated::buildPerPixCookTorranceEvTm(SLVLight* lights)
 {
     assert(_shaders.size() > 1 &&
