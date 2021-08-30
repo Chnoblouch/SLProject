@@ -695,7 +695,7 @@ void SLMaterial::passToUniforms(SLGLProgram* program)
                 }
             }
 
-            if (program->uniform1i(name, texUnit) < 0 && pass < 5)
+            if (program->uniform1i(name, texUnit) < 0)
             {
                 Utils::log("Material", "texture name %s not found", name);
             }
@@ -704,7 +704,6 @@ void SLMaterial::passToUniforms(SLGLProgram* program)
         }
     }
 
-    pass++;
     program->uniform1i("u_matHasTexture", texUnit ? 1 : 0);
 }
 //-----------------------------------------------------------------------------

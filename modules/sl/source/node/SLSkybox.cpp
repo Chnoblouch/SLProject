@@ -72,6 +72,9 @@ SLSkybox::SLSkybox(SLAssetManager* assetMgr,
                       -10,
                       "box",
                       matCubeMap));
+
+
+    _textures.push_back(cubeMap);
 }
 //-----------------------------------------------------------------------------
 //! Draw the skybox with a cube map with the camera in its center.
@@ -141,10 +144,12 @@ SLSkybox::SLSkybox(SLProjectScene* projectScene,
     // Create the material of the sky box and store there the other texture to be used for other materials
     SLMaterial* hdrMaterial = new SLMaterial(projectScene, "matCubeMap");
     hdrMaterial->addTexture(_environmentCubemap);
-    hdrMaterial->addTexture(_irradianceCubemap);
-    hdrMaterial->addTexture(_roughnessCubemap);
-    hdrMaterial->addTexture(_brdfLUTTexture);
     hdrMaterial->program(backgroundShader);
+
+    _textures.push_back(_environmentCubemap);
+    _textures.push_back(_irradianceCubemap);
+    _textures.push_back(_roughnessCubemap);
+    _textures.push_back(_brdfLUTTexture);
 
     // Create the box for the sky box
     addMesh(new SLBox(projectScene,
@@ -209,10 +214,10 @@ void SLSkybox::drawAroundCamera(SLSceneView* sv)
 //! Returns the color in the skybox at the the specified direction dir
 SLCol4f SLSkybox::colorAtDir(const SLVec3f& dir)
 {
-    if (_mesh && !_mesh->mat()->textures(TT_unknown).empty() &&
-        _mesh->mat()->textures(TT_unknown)[0]->images().size() == 6)
+    if (_mesh && !_mesh->mat()->textures(TT_diffuse).empty() &&
+        _mesh->mat()->textures(TT_diffuse)[0]->images().size() == 6)
     {
-        SLGLTexture* tex = _mesh->mat()->textures(TT_unknown)[0];
+        SLGLTexture* tex = _mesh->mat()->textures(TT_diffuse)[0];
         return tex->getTexelf(dir);
     }
     else

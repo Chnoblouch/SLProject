@@ -1733,9 +1733,11 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
                                             "HDR Skybox",
                                             new SLGLUniform1f(exposure));
 
-        SLGLTexture* irrandianceMap = hdrCubeMap->mesh()->mat()->textures(TT_irradianceCubemap)[0];
-        SLGLTexture* prefilterMap   = hdrCubeMap->mesh()->mat()->textures(TT_roughnessCubemap)[0];
-        SLGLTexture* brdfLUTTexture = hdrCubeMap->mesh()->mat()->textures(TT_brdfLUT)[0];
+        std::vector<SLGLTexture*> textures = hdrCubeMap->getTextures();
+
+        SLGLTexture* irrandianceMap = textures[1];
+        SLGLTexture* prefilterMap   = textures[2];
+        SLGLTexture* brdfLUTTexture = textures[3];
 
         // Create a scene group node
         SLNode* scene = new SLNode("scene node");
@@ -1820,10 +1822,26 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
         light3->attenuation(0, 0, 1);
         SLLightSpot* light4 = new SLLightSpot(s, s, maxX, -maxY, maxY, 0.1f, 180, 0, 300, 300);
         light4->attenuation(0, 0, 1);
+        light1->castsShadows(true);
+        light2->castsShadows(true);
+        light3->castsShadows(true);
+        light4->castsShadows(true);
+        light1->createsShadows(true);
+        light2->createsShadows(true);
+        light3->createsShadows(true);
+        light4->createsShadows(true);
         scene->addChild(light1);
         scene->addChild(light2);
         scene->addChild(light3);
         scene->addChild(light4);
+
+
+        // Add a box which receives shadows
+        SLMaterial* matPerPixSM = new SLMaterial(s, "m1"); //, SLCol4f::WHITE, SLCol4f::WHITE, 500, 0, 0, 1, progPerPixSM);
+        SLNode* boxNode = new SLNode(new SLBox(s, -15, -15, -0.2, 15, 15, 0.2, "Box", matPerPixSM));
+        boxNode->translate(SLVec3f(0, 0, -10));
+        boxNode->castsShadows(false);
+        scene->addChild(boxNode);
 
         sv->camera(cam1);
         sv->skybox(hdrCubeMap);

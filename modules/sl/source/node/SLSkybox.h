@@ -54,8 +54,12 @@ public:
 
     void drawAroundCamera(SLSceneView* sv);
 
+    const std::vector<SLGLTexture*> getTextures() { return _textures; };
+
 private:
     void         build();
+    std::vector<SLGLTexture*> _textures;
+
     SLGLTexture* _environmentCubemap;
     SLGLTexture* _irradianceCubemap;
     SLGLTexture* _roughnessCubemap;
