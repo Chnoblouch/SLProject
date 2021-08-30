@@ -1835,7 +1835,6 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
         scene->addChild(light3);
         scene->addChild(light4);
 
-
         // Add a box which receives shadows
         SLMaterial* matPerPixSM = new SLMaterial(s, "m1"); //, SLCol4f::WHITE, SLCol4f::WHITE, 500, 0, 0, 1, progPerPixSM);
         SLNode* boxNode = new SLNode(new SLBox(s, -15, -15, -0.2, 15, 15, 0.2, "Box", matPerPixSM));

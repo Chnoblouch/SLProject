@@ -107,8 +107,17 @@ private:
 
     void buildPerPixCookTorranceEvTmNmAoSm(SLVLight* lights);
     void buildPerPixCookTorranceEvTmNmAo(SLVLight* lights);
+    void buildPerPixCookTorranceEvTmNmSm(SLVLight* lights);
+    void buildPerPixCookTorranceEvTmAoSm(SLVLight* lights);
+    void buildPerPixCookTorranceEvAoSm(SLVLight* lights);
+    void buildPerPixCookTorranceEvNmSm(SLVLight* lights);
+    void buildPerPixCookTorranceEvTmSm(SLVLight* lights);
     void buildPerPixCookTorranceEvTmAo(SLVLight* lights);
+    void buildPerPixCookTorranceEvTmNm(SLVLight* lights);
+    void buildPerPixCookTorranceEvSm(SLVLight* lights);
+    void buildPerPixCookTorranceEvAo(SLVLight* lights);
     void buildPerPixCookTorranceEvTm(SLVLight* lights);
+    void buildPerPixCookTorranceEvNm(SLVLight* lights);
     void buildPerPixCookTorranceEv(SLVLight* lights);
     void buildPerPixCookTorrance(SLVLight* lights);
 
