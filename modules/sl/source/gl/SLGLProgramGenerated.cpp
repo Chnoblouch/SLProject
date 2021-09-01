@@ -1333,83 +1333,46 @@ void SLGLProgramGenerated::buildProgramCode(SLMaterial* mat,
     }
     else if (mat->lightModel() == LM_CookTorrance)
     {
-        if (Tm && Ao && Nm & Sm)
+        if (Tm && Ao && Nm)
         {
             std::cout << "tm ao nm sm" << std::endl;
-            buildPerPixCookTorranceTmNmAoSm(lights, Ev);
-        }
-        else if (Tm && Ao && Nm)
-        {
-            std::cout << "tm ao nm" << std::endl;
-            buildPerPixCookTorranceTmNmAo(lights, Ev);
-        }
-        else if (Tm && Nm && Sm)
-        {
-            std::cout << "tm nm sm" << std::endl;
-            buildPerPixCookTorranceTmNmSm(lights, Ev);
-        }
-        else if (Tm && Ao && Sm)
-        {
-            std::cout << "tm ao sm" << std::endl;
-            buildPerPixCookTorranceTmAoSm(lights, Ev);
-        }
-        else if (Ao && Sm)
-        {
-            std::cout << "ao sm" << std::endl;
-            buildPerPixCookTorranceAoSm(lights, Ev);
-        }
-        else if (Nm && Sm)
-        {
-            std::cout << "nm sm" << std::endl;
-            buildPerPixCookTorranceNmSm(lights, Ev);
-        }
-        else if (Tm && Sm)
-        {
-            std::cout << "tm sm" << std::endl;
-            buildPerPixCookTorranceTmSm(lights, Ev);
-        }
-        else if (Tm && Ao)
-        {
-            std::cout << "tm ao" << std::endl;
-            buildPerPixCookTorranceTmAo(lights, Ev);
+            buildPerPixCookTorranceTmNmAo(lights, Ev, Sm);
         }
         else if (Tm && Nm)
         {
-            std::cout << "tm nm" << std::endl;
-            buildPerPixCookTorranceTmNm(lights, Ev);
+            std::cout << "tm nm sm" << std::endl;
+            buildPerPixCookTorranceTmNm(lights, Ev, Sm);
         }
-        else if (Sm)
+        else if (Tm && Ao)
         {
-            std::cout << "sm" << std::endl;
-            buildPerPixCookTorranceSm(lights, Ev);
+            std::cout << "tm ao sm" << std::endl;
+            buildPerPixCookTorranceTmAo(lights, Ev, Sm);
         }
         else if (Ao)
         {
-            std::cout << "ao" << std::endl;
-            buildPerPixCookTorranceAo(lights, Ev);
-        }
-        else if (Tm)
-        {
-            std::cout << "tm" << std::endl;
-            buildPerPixCookTorranceTm(lights, Ev);
+            std::cout << "ao sm" << std::endl;
+            buildPerPixCookTorranceAo(lights, Ev, Sm);
         }
         else if (Nm)
         {
-            std::cout << "nm" << std::endl;
-            buildPerPixCookTorranceNm(lights, Ev);
+            std::cout << "nm sm" << std::endl;
+            buildPerPixCookTorranceNm(lights, Ev, Sm);
+        }
+        else if (Tm)
+        {
+            std::cout << "tm sm" << std::endl;
+            buildPerPixCookTorranceTm(lights, Ev, Sm);
         }
         else
         {
-            std::cout << "N/A" << std::endl;
-            buildPerPixCookTorrance(lights, Ev);
+            buildPerPixCookTorrance(lights, Ev, Sm);
         }
-
     }
     else
         SL_EXIT_MSG("Only Blinn-Phong supported yet.");
 }
 
-void SLGLProgramGenerated::buildPerPixCookTorranceTmNmAoSm(SLVLight* lights, bool ev)
+void SLGLProgramGenerated::buildPerPixCookTorranceTmNmAo(SLVLight* lights, bool ev, bool sm)
 {
     assert(_shaders.size() > 1 &&
            _shaders[0]->type() == ST_vertex &&
@@ -1424,14 +1387,16 @@ void SLGLProgramGenerated::buildPerPixCookTorranceTmNmAoSm(SLVLight* lights, boo
     vertCode += vertInputs_u_matrices;
     vertCode += vertInputs_u_matrices_extra;
     vertCode += vertInputs_u_lightNm;
-    vertCode += vertOutputs_v_P_WS;
+    if (sm)
+        vertCode += vertOutputs_v_P_WS;
     vertCode += vertOutputs_v_P_VS;
     vertCode += vertOutputs_v_N_VS;
     vertCode += vertOutputs_v_uv1;
     vertCode += vertOutputs_v_R_OS;
     vertCode += vertOutputs_v_lightNm;
     vertCode += vertMainBlinn_BeginAll;
-    vertCode += vertMainBlinn_v_P_WS_Sm;
+    if (sm)
+        vertCode += vertMainBlinn_v_P_WS_Sm;
     vertCode += vertMainBlinn_v_N_VS;
     vertCode += vertMainBlinn_v_uv1;
     vertCode += vertMainBlinn_TBN_Nm;
@@ -1444,25 +1409,36 @@ void SLGLProgramGenerated::buildPerPixCookTorranceTmNmAoSm(SLVLight* lights, boo
     fragCode += shaderHeader((int)lights->size());
     fragCode += R"(
 in      vec3        v_P_VS;     // Interpol. point of illumination in view space (VS)
-in      vec3        v_P_WS;     // Interpol. point of illumination in world space (WS)
 in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
 in      vec3        v_R_OS;     // Interpol. reflect in object space
 in      vec2        v_uv1;      // Texture coordinate varying
 in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent space
 )";
+
+    if (sm)
+        fragCode += R"(
+in      vec3        v_P_WS;     // Interpol. point of illumination in world space (WS)
+)";
     fragCode += fragInputs_u_lightAll;
-    fragCode += fragInputs_u_lightSm(lights);
     if (ev)
         fragCode += fragInputs_u_matCookTorranceEnvironnment;
     fragCode += fragInputs_u_matCookTorranceTextures;
-    fragCode += fragInputs_u_matTmNmAoSm;
-    fragCode += fragInputs_u_shadowMaps(lights);
+    if (sm)
+    {
+        fragCode += fragInputs_u_lightSm(lights);
+        fragCode += fragInputs_u_shadowMaps(lights);
+        fragCode += fragInputs_u_matTmNmAoSm;
+    }
+    else
+        fragCode += fragInputs_u_matTmNmAo;
+
     fragCode += fragInputs_u_cam;
     fragCode += fragOutputs_o_fragColor;
     fragCode += fragCookTorrenceFunctions;
     fragCode += fragFunctionFogBlend;
     fragCode += fragFunctionDoStereoSeparation;
-    fragCode += fragShadowTest(lights);
+    if (sm)
+        fragCode += fragShadowTest(lights);
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromNm0;
     fragCode += fragMainCookTorrance_2_LightLoopTm;
@@ -1474,7 +1450,7 @@ in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent 
     addCodeToShader(_shaders[1], fragCode, _name + ".frag");
 }
 
-void SLGLProgramGenerated::buildPerPixCookTorranceTmNmAo(SLVLight* lights, bool ev)
+void SLGLProgramGenerated::buildPerPixCookTorranceTmNm(SLVLight* lights, bool ev, bool sm)
 {
     assert(_shaders.size() > 1 &&
            _shaders[0]->type() == ST_vertex &&
@@ -1489,12 +1465,16 @@ void SLGLProgramGenerated::buildPerPixCookTorranceTmNmAo(SLVLight* lights, bool 
     vertCode += vertInputs_u_matrices;
     vertCode += vertInputs_u_matrices_extra;
     vertCode += vertInputs_u_lightNm;
+    if (sm)
+        vertCode += vertOutputs_v_P_WS;
     vertCode += vertOutputs_v_P_VS;
     vertCode += vertOutputs_v_N_VS;
     vertCode += vertOutputs_v_uv1;
     vertCode += vertOutputs_v_R_OS;
     vertCode += vertOutputs_v_lightNm;
     vertCode += vertMainBlinn_BeginAll;
+    if (sm)
+        vertCode += vertMainBlinn_v_P_WS_Sm;
     vertCode += vertMainBlinn_v_N_VS;
     vertCode += vertMainBlinn_v_uv1;
     vertCode += vertMainBlinn_TBN_Nm;
@@ -1512,81 +1492,30 @@ in      vec3        v_R_OS;     // Interpol. reflect in object space
 in      vec2        v_uv1;      // Texture coordinate varying
 in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent space
 )";
-    fragCode += fragInputs_u_lightAll;
-    if (ev)
-        fragCode += fragInputs_u_matCookTorranceEnvironnment;
-    fragCode += fragInputs_u_matCookTorranceTextures;
-    fragCode += fragInputs_u_matTmNmAo;
-    fragCode += fragInputs_u_cam;
-    fragCode += fragOutputs_o_fragColor;
-    fragCode += fragCookTorrenceFunctions;
-    fragCode += fragFunctionFogBlend;
-    fragCode += fragFunctionDoStereoSeparation;
-    fragCode += fragMainBlinn_0_IntensityDeclaration;
-    fragCode += fragMainBlinn_1_EN_fromNm0;
-    fragCode += fragMainCookTorrance_2_LightLoopTm;
-    if (ev)
-        fragCode += fragMainCookTorrance_3_FragColorTmEvAo;
-    else
-        fragCode += fragMainCookTorrance_3_FragColorTmAo;
-    fragCode += fragMainBlinn_4_End;
-    addCodeToShader(_shaders[1], fragCode, _name + ".frag");
-}
 
-void SLGLProgramGenerated::buildPerPixCookTorranceTmNmSm(SLVLight* lights, bool ev)
-{
-    assert(_shaders.size() > 1 &&
-           _shaders[0]->type() == ST_vertex &&
-           _shaders[1]->type() == ST_fragment);
-
-    // Assemble vertex shader code
-    string vertCode;
-    vertCode += shaderHeader((int)lights->size());
-    vertCode += vertInputs_a_pn;
-    vertCode += vertInputs_a_uv1;
-    vertCode += vertInputs_a_tangent;
-    vertCode += vertInputs_u_matrices;
-    vertCode += vertInputs_u_matrices_extra;
-    vertCode += vertInputs_u_lightNm;
-    vertCode += vertOutputs_v_P_WS;
-    vertCode += vertOutputs_v_P_VS;
-    vertCode += vertOutputs_v_N_VS;
-    vertCode += vertOutputs_v_uv1;
-    vertCode += vertOutputs_v_R_OS;
-    vertCode += vertOutputs_v_lightNm;
-    vertCode += vertMainBlinn_BeginAll;
-    vertCode += vertMainBlinn_v_P_WS_Sm;
-    vertCode += vertMainBlinn_v_N_VS;
-    vertCode += vertMainBlinn_v_uv1;
-    vertCode += vertMainBlinn_TBN_Nm;
-    vertCode += vertMainBlinn_v_R_OS;
-    vertCode += vertMainBlinn_EndAll;
-    addCodeToShader(_shaders[0], vertCode, _name + ".vert");
-
-    // Assemble fragment shader code
-    string fragCode;
-    fragCode += shaderHeader((int)lights->size());
-    fragCode += R"(
-in      vec3        v_P_VS;     // Interpol. point of illumination in view space (VS)
+    if (sm)
+        fragCode += R"(
 in      vec3        v_P_WS;     // Interpol. point of illumination in world space (WS)
-in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
-in      vec3        v_R_OS;     // Interpol. reflect in object space
-in      vec2        v_uv1;      // Texture coordinate varying
-in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent space
 )";
     fragCode += fragInputs_u_lightAll;
-    fragCode += fragInputs_u_lightSm(lights);
     if (ev)
         fragCode += fragInputs_u_matCookTorranceEnvironnment;
     fragCode += fragInputs_u_matCookTorranceTextures;
-    fragCode += fragInputs_u_matTmNmSm;
-    fragCode += fragInputs_u_shadowMaps(lights);
+    if (sm)
+    {
+        fragCode += fragInputs_u_lightSm(lights);
+        fragCode += fragInputs_u_shadowMaps(lights);
+        fragCode += fragInputs_u_matTmNmSm;
+    }
+    else
+        fragCode += fragInputs_u_matTmNm;
     fragCode += fragInputs_u_cam;
     fragCode += fragOutputs_o_fragColor;
     fragCode += fragCookTorrenceFunctions;
     fragCode += fragFunctionFogBlend;
     fragCode += fragFunctionDoStereoSeparation;
-    fragCode += fragShadowTest(lights);
+    if (sm)
+        fragCode += fragShadowTest(lights);
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromNm0;
     fragCode += fragMainCookTorrance_2_LightLoopTm;
@@ -1598,7 +1527,7 @@ in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent 
     addCodeToShader(_shaders[1], fragCode, _name + ".frag");
 }
 
-void SLGLProgramGenerated::buildPerPixCookTorranceTmAoSm(SLVLight* lights, bool ev)
+void SLGLProgramGenerated::buildPerPixCookTorranceTmAo(SLVLight* lights, bool ev, bool sm)
 {
     assert(_shaders.size() > 1 &&
            _shaders[0]->type() == ST_vertex &&
@@ -1611,13 +1540,15 @@ void SLGLProgramGenerated::buildPerPixCookTorranceTmAoSm(SLVLight* lights, bool 
     vertCode += vertInputs_a_uv1;
     vertCode += vertInputs_u_matrices;
     vertCode += vertInputs_u_matrices_extra;
-    vertCode += vertOutputs_v_P_WS;
+    if (sm)
+        vertCode += vertOutputs_v_P_WS;
     vertCode += vertOutputs_v_P_VS;
     vertCode += vertOutputs_v_N_VS;
     vertCode += vertOutputs_v_uv1;
     vertCode += vertOutputs_v_R_OS;
     vertCode += vertMainBlinn_BeginAll;
-    vertCode += vertMainBlinn_v_P_WS_Sm;
+    if (sm)
+        vertCode += vertMainBlinn_v_P_WS_Sm;
     vertCode += vertMainBlinn_v_N_VS;
     vertCode += vertMainBlinn_v_uv1;
     vertCode += vertMainBlinn_v_R_OS;
@@ -1629,24 +1560,34 @@ void SLGLProgramGenerated::buildPerPixCookTorranceTmAoSm(SLVLight* lights, bool 
     fragCode += shaderHeader((int)lights->size());
     fragCode += R"(
 in      vec3        v_P_VS;     // Interpol. point of illumination in view space (VS)
-in      vec3        v_P_WS;     // Interpol. point of illumination in world space (WS)
 in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
 in      vec3        v_R_OS;     // Interpol. reflect in object space
 in      vec2        v_uv1;      // Texture coordinate varying
 )";
+    if (sm)
+        fragCode += R"(
+in      vec3        v_P_WS;     // Interpol. point of illumination in world space (WS)
+)";
     fragCode += fragInputs_u_lightAll;
-    fragCode += fragInputs_u_lightSm(lights);
     if (ev)
         fragCode += fragInputs_u_matCookTorranceEnvironnment;
     fragCode += fragInputs_u_matCookTorranceTextures;
-    fragCode += fragInputs_u_matTmAoSm;
-    fragCode += fragInputs_u_shadowMaps(lights);
+    if (sm)
+    {
+        fragCode += fragInputs_u_lightSm(lights);
+        fragCode += fragInputs_u_shadowMaps(lights);
+        fragCode += fragInputs_u_matTmAoSm;
+    }
+    else
+        fragCode += fragInputs_u_matTmAo;
+
     fragCode += fragInputs_u_cam;
     fragCode += fragOutputs_o_fragColor;
     fragCode += fragCookTorrenceFunctions;
     fragCode += fragFunctionFogBlend;
     fragCode += fragFunctionDoStereoSeparation;
-    fragCode += fragShadowTest(lights);
+    if (sm)
+        fragCode += fragShadowTest(lights);
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromVert;
     fragCode += fragMainCookTorrance_2_LightLoopTm;
@@ -1658,7 +1599,7 @@ in      vec2        v_uv1;      // Texture coordinate varying
     addCodeToShader(_shaders[1], fragCode, _name + ".frag");
 }
 
-void SLGLProgramGenerated::buildPerPixCookTorranceAoSm(SLVLight* lights, bool ev)
+void SLGLProgramGenerated::buildPerPixCookTorranceAo(SLVLight* lights, bool ev, bool sm)
 {
     assert(_shaders.size() > 1 &&
            _shaders[0]->type() == ST_vertex &&
@@ -1671,13 +1612,15 @@ void SLGLProgramGenerated::buildPerPixCookTorranceAoSm(SLVLight* lights, bool ev
     vertCode += vertInputs_a_uv1;
     vertCode += vertInputs_u_matrices;
     vertCode += vertInputs_u_matrices_extra;
-    vertCode += vertOutputs_v_P_WS;
+    if (sm)
+        vertCode += vertOutputs_v_P_WS;
     vertCode += vertOutputs_v_P_VS;
     vertCode += vertOutputs_v_N_VS;
     vertCode += vertOutputs_v_uv1;
     vertCode += vertOutputs_v_R_OS;
     vertCode += vertMainBlinn_BeginAll;
-    vertCode += vertMainBlinn_v_P_WS_Sm;
+    if (sm)
+        vertCode += vertMainBlinn_v_P_WS_Sm;
     vertCode += vertMainBlinn_v_N_VS;
     vertCode += vertMainBlinn_v_uv1;
     vertCode += vertMainBlinn_v_R_OS;
@@ -1689,24 +1632,35 @@ void SLGLProgramGenerated::buildPerPixCookTorranceAoSm(SLVLight* lights, bool ev
     fragCode += shaderHeader((int)lights->size());
     fragCode += R"(
 in      vec3        v_P_VS;     // Interpol. point of illumination in view space (VS)
-in      vec3        v_P_WS;     // Interpol. point of illumination in world space (WS)
 in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
 in      vec3        v_R_OS;     // Interpol. reflect in object space
 in      vec2        v_uv1;      // Texture coordinate varying
 )";
+
+    if (sm)
+        fragCode += R"(
+in      vec3        v_P_WS;     // Interpol. point of illumination in world space (WS)
+)";
     fragCode += fragInputs_u_lightAll;
-    fragCode += fragInputs_u_lightSm(lights);
     fragCode += fragInputs_u_matAllCookTorrance;
     if (ev)
         fragCode += fragInputs_u_matCookTorranceEnvironnment;
-    fragCode += fragInputs_u_matAoSm;
-    fragCode += fragInputs_u_shadowMaps(lights);
+    if (sm)
+    {
+        fragCode += fragInputs_u_lightSm(lights);
+        fragCode += fragInputs_u_shadowMaps(lights);
+        fragCode += fragInputs_u_matAoSm;
+    }
+    else
+        fragCode += fragInputs_u_matAo;
+
     fragCode += fragInputs_u_cam;
     fragCode += fragOutputs_o_fragColor;
     fragCode += fragCookTorrenceFunctions;
     fragCode += fragFunctionFogBlend;
     fragCode += fragFunctionDoStereoSeparation;
-    fragCode += fragShadowTest(lights);
+    if (sm)
+        fragCode += fragShadowTest(lights);
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromVert;
     fragCode += fragMainCookTorrance_2_LightLoop;
@@ -1718,7 +1672,7 @@ in      vec2        v_uv1;      // Texture coordinate varying
     addCodeToShader(_shaders[1], fragCode, _name + ".frag");
 }
 
-void SLGLProgramGenerated::buildPerPixCookTorranceNmSm(SLVLight* lights, bool ev)
+void SLGLProgramGenerated::buildPerPixCookTorranceNm(SLVLight* lights, bool ev, bool sm)
 {
     assert(_shaders.size() > 1 &&
            _shaders[0]->type() == ST_vertex &&
@@ -1733,14 +1687,16 @@ void SLGLProgramGenerated::buildPerPixCookTorranceNmSm(SLVLight* lights, bool ev
     vertCode += vertInputs_u_matrices;
     vertCode += vertInputs_u_matrices_extra;
     vertCode += vertInputs_u_lightNm;
-    vertCode += vertOutputs_v_P_WS;
+    if (sm)
+        vertCode += vertOutputs_v_P_WS;
     vertCode += vertOutputs_v_P_VS;
     vertCode += vertOutputs_v_N_VS;
     vertCode += vertOutputs_v_uv1;
     vertCode += vertOutputs_v_R_OS;
     vertCode += vertOutputs_v_lightNm;
     vertCode += vertMainBlinn_BeginAll;
-    vertCode += vertMainBlinn_v_P_WS_Sm;
+    if (sm)
+        vertCode += vertMainBlinn_v_P_WS_Sm;
     vertCode += vertMainBlinn_v_N_VS;
     vertCode += vertMainBlinn_v_uv1;
     vertCode += vertMainBlinn_TBN_Nm;
@@ -1753,25 +1709,37 @@ void SLGLProgramGenerated::buildPerPixCookTorranceNmSm(SLVLight* lights, bool ev
     fragCode += shaderHeader((int)lights->size());
     fragCode += R"(
 in      vec3        v_P_VS;     // Interpol. point of illumination in view space (VS)
-in      vec3        v_P_WS;     // Interpol. point of illumination in world space (WS)
 in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
 in      vec3        v_R_OS;     // Interpol. reflect in object space
 in      vec2        v_uv1;      // Texture coordinate varying
 in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent space
 )";
+
+    if (sm)
+        fragCode += R"(
+in      vec3        v_P_WS;     // Interpol. point of illumination in world space (WS)
+)";
+
     fragCode += fragInputs_u_lightAll;
-    fragCode += fragInputs_u_lightSm(lights);
+    fragCode += fragInputs_u_matCookTorranceTextures;
     if (ev)
         fragCode += fragInputs_u_matCookTorranceEnvironnment;
-    fragCode += fragInputs_u_matCookTorranceTextures;
-    fragCode += fragInputs_u_matNmSm;
-    fragCode += fragInputs_u_shadowMaps(lights);
+    if (sm)
+    {
+        fragCode += fragInputs_u_lightSm(lights);
+        fragCode += fragInputs_u_matNmSm;
+        fragCode += fragInputs_u_shadowMaps(lights);
+    }
+    else
+        fragCode += fragInputs_u_matNm;
+
     fragCode += fragInputs_u_cam;
     fragCode += fragOutputs_o_fragColor;
     fragCode += fragCookTorrenceFunctions;
     fragCode += fragFunctionFogBlend;
     fragCode += fragFunctionDoStereoSeparation;
-    fragCode += fragShadowTest(lights);
+    if (sm)
+        fragCode += fragShadowTest(lights);
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromNm0;
     fragCode += fragMainCookTorrance_2_LightLoop;
@@ -1783,7 +1751,7 @@ in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent 
     addCodeToShader(_shaders[1], fragCode, _name + ".frag");
 }
 
-void SLGLProgramGenerated::buildPerPixCookTorranceTmSm(SLVLight* lights, bool ev)
+void SLGLProgramGenerated::buildPerPixCookTorranceTm(SLVLight* lights, bool ev, bool sm)
 {
     assert(_shaders.size() > 1 &&
            _shaders[0]->type() == ST_vertex &&
@@ -1803,7 +1771,8 @@ void SLGLProgramGenerated::buildPerPixCookTorranceTmSm(SLVLight* lights, bool ev
     vertCode += vertOutputs_v_uv1;
     vertCode += vertOutputs_v_R_OS;
     vertCode += vertMainBlinn_BeginAll;
-    vertCode += vertMainBlinn_v_P_WS_Sm;
+    if (sm)
+        vertCode += vertMainBlinn_v_P_WS_Sm;
     vertCode += vertMainBlinn_v_N_VS;
     vertCode += vertMainBlinn_v_uv1;
     vertCode += vertMainBlinn_v_R_OS;
@@ -1815,24 +1784,37 @@ void SLGLProgramGenerated::buildPerPixCookTorranceTmSm(SLVLight* lights, bool ev
     fragCode += shaderHeader((int)lights->size());
     fragCode += R"(
 in      vec3        v_P_VS;     // Interpol. point of illumination in view space (VS)
-in      vec3        v_P_WS;     // Interpol. point of illumination in world space (WS)
 in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
 in      vec3        v_R_OS;     // Interpol. reflect in object space
 in      vec2        v_uv1;      // Texture coordinate varying
 )";
+
+    if (sm)
+        fragCode += R"(
+in      vec3        v_P_WS;     // Interpol. point of illumination in world space (WS)
+)";
+
+
     fragCode += fragInputs_u_lightAll;
-    fragCode += fragInputs_u_lightSm(lights);
     if (ev)
         fragCode += fragInputs_u_matCookTorranceEnvironnment;
     fragCode += fragInputs_u_matCookTorranceTextures;
-    fragCode += fragInputs_u_matTmSm;
-    fragCode += fragInputs_u_shadowMaps(lights);
+
+    if (sm)
+    {
+        fragCode += fragInputs_u_matTmSm;
+        fragCode += fragInputs_u_lightSm(lights);
+        fragCode += fragInputs_u_shadowMaps(lights);
+    }
+    else
+        fragCode += fragInputs_u_matTm;
     fragCode += fragInputs_u_cam;
     fragCode += fragOutputs_o_fragColor;
     fragCode += fragCookTorrenceFunctions;
     fragCode += fragFunctionFogBlend;
     fragCode += fragFunctionDoStereoSeparation;
-    fragCode += fragShadowTest(lights);
+    if (sm)
+        fragCode += fragShadowTest(lights);
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromVert;
     fragCode += fragMainCookTorrance_2_LightLoopTm;
@@ -1844,7 +1826,7 @@ in      vec2        v_uv1;      // Texture coordinate varying
     addCodeToShader(_shaders[1], fragCode, _name + ".frag");
 }
 
-void SLGLProgramGenerated::buildPerPixCookTorranceTmAo(SLVLight* lights, bool ev)
+void SLGLProgramGenerated::buildPerPixCookTorrance(SLVLight* lights, bool ev, bool sm)
 {
     assert(_shaders.size() > 1 &&
            _shaders[0]->type() == ST_vertex &&
@@ -1856,14 +1838,15 @@ void SLGLProgramGenerated::buildPerPixCookTorranceTmAo(SLVLight* lights, bool ev
     vertCode += vertInputs_a_pn;
     vertCode += vertInputs_u_matrices;
     vertCode += vertInputs_u_matrices_extra;
-    vertCode += vertInputs_a_uv1;
+    if (sm)
+        vertCode += vertOutputs_v_P_WS;
     vertCode += vertOutputs_v_P_VS;
     vertCode += vertOutputs_v_N_VS;
-    vertCode += vertOutputs_v_uv1;
     vertCode += vertOutputs_v_R_OS;
     vertCode += vertMainBlinn_BeginAll;
+    if (sm)
+        vertCode += vertMainBlinn_v_P_WS_Sm;
     vertCode += vertMainBlinn_v_N_VS;
-    vertCode += vertMainBlinn_v_uv1;
     vertCode += vertMainBlinn_v_R_OS;
     vertCode += vertMainBlinn_EndAll;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
@@ -1875,352 +1858,30 @@ void SLGLProgramGenerated::buildPerPixCookTorranceTmAo(SLVLight* lights, bool ev
 in      vec3        v_P_VS;     // Interpol. point of illumination in view space (VS)
 in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
 in      vec3        v_R_OS;     // Interpol. reflect in object space
-in      vec2        v_uv1;      // Texture coordinate varying
 )";
-    fragCode += fragInputs_u_lightAll;
-    fragCode += fragInputs_u_matCookTorranceEnvironnment;
-    fragCode += fragInputs_u_matCookTorranceTextures;
-    fragCode += fragInputs_u_matTmAo;
-    fragCode += fragInputs_u_cam;
-    fragCode += fragOutputs_o_fragColor;
-    fragCode += fragCookTorrenceFunctions;
-    fragCode += fragFunctionFogBlend;
-    fragCode += fragFunctionDoStereoSeparation;
-    fragCode += fragMainBlinn_0_IntensityDeclaration;
-    fragCode += fragMainBlinn_1_EN_fromVert;
-    fragCode += fragMainCookTorrance_2_LightLoopTm;
-    fragCode += fragMainCookTorrance_3_FragColorTmEvAo;
-    fragCode += fragMainBlinn_4_End;
-    addCodeToShader(_shaders[1], fragCode, _name + ".frag");
-}
 
-void SLGLProgramGenerated::buildPerPixCookTorranceTmNm(SLVLight* lights, bool ev)
-{
-    assert(_shaders.size() > 1 &&
-           _shaders[0]->type() == ST_vertex &&
-           _shaders[1]->type() == ST_fragment);
-
-    // Assemble vertex shader code
-    string vertCode;
-    vertCode += shaderHeader((int)lights->size());
-    vertCode += vertInputs_a_pn;
-    vertCode += vertInputs_a_uv1;
-    vertCode += vertInputs_a_tangent;
-    vertCode += vertInputs_u_matrices;
-    vertCode += vertInputs_u_matrices_extra;
-    vertCode += vertInputs_u_lightNm;
-    vertCode += vertOutputs_v_P_WS;
-    vertCode += vertOutputs_v_P_VS;
-    vertCode += vertOutputs_v_N_VS;
-    vertCode += vertOutputs_v_uv1;
-    vertCode += vertOutputs_v_R_OS;
-    vertCode += vertOutputs_v_lightNm;
-    vertCode += vertMainBlinn_BeginAll;
-    vertCode += vertMainBlinn_v_N_VS;
-    vertCode += vertMainBlinn_v_uv1;
-    vertCode += vertMainBlinn_TBN_Nm;
-    vertCode += vertMainBlinn_v_R_OS;
-    vertCode += vertMainBlinn_EndAll;
-    addCodeToShader(_shaders[0], vertCode, _name + ".vert");
-
-    // Assemble fragment shader code
-    string fragCode;
-    fragCode += shaderHeader((int)lights->size());
-    fragCode += R"(
-in      vec3        v_P_VS;     // Interpol. point of illumination in view space (VS)
-in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
-in      vec3        v_R_OS;     // Interpol. reflect in object space
-in      vec2        v_uv1;      // Texture coordinate varying
-in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent space
-)";
-    fragCode += fragInputs_u_lightAll;
-    if (ev)
-        fragCode += fragInputs_u_matCookTorranceEnvironnment;
-    fragCode += fragInputs_u_matCookTorranceTextures;
-    fragCode += fragInputs_u_matTmNmSm;
-    fragCode += fragInputs_u_cam;
-    fragCode += fragOutputs_o_fragColor;
-    fragCode += fragCookTorrenceFunctions;
-    fragCode += fragFunctionFogBlend;
-    fragCode += fragFunctionDoStereoSeparation;
-    fragCode += fragMainBlinn_0_IntensityDeclaration;
-    fragCode += fragMainBlinn_1_EN_fromNm0;
-    fragCode += fragMainCookTorrance_2_LightLoopTm;
-    if (ev)
-        fragCode += fragMainCookTorrance_3_FragColorTmEv;
-    else
-        fragCode += fragMainCookTorrance_3_FragColorTm;
-    fragCode += fragMainBlinn_4_End;
-    addCodeToShader(_shaders[1], fragCode, _name + ".frag");
-}
-
-void SLGLProgramGenerated::buildPerPixCookTorranceSm(SLVLight* lights, bool ev)
-{
-    assert(_shaders.size() > 1 &&
-           _shaders[0]->type() == ST_vertex &&
-           _shaders[1]->type() == ST_fragment);
-
-    if (ev)
-        std::cout << "has environment" << std::endl;
-
-    // Assemble vertex shader code
-    string vertCode;
-    vertCode += shaderHeader((int)lights->size());
-    vertCode += vertInputs_a_pn;
-    vertCode += vertInputs_u_matrices;
-    vertCode += vertInputs_u_matrices_extra;
-    vertCode += vertOutputs_v_P_WS;
-    vertCode += vertOutputs_v_P_VS;
-    vertCode += vertOutputs_v_N_VS;
-    vertCode += vertOutputs_v_R_OS;
-    vertCode += vertMainBlinn_BeginAll;
-    vertCode += vertMainBlinn_v_P_WS_Sm;
-    vertCode += vertMainBlinn_v_N_VS;
-    vertCode += vertMainBlinn_v_R_OS;
-    vertCode += vertMainBlinn_EndAll;
-    addCodeToShader(_shaders[0], vertCode, _name + ".vert");
-
-    // Assemble fragment shader code
-    string fragCode;
-    fragCode += shaderHeader((int)lights->size());
-    fragCode += R"(
-in      vec3        v_P_VS;     // Interpol. point of illumination in view space (VS)
-in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
-in      vec3        v_R_OS;     // Interpol. reflect in object space
+    if (sm)
+        fragCode += R"(
 in      vec3        v_P_WS;     // Interpol. point of illumination in world space (WS)
 )";
+
+
     fragCode += fragInputs_u_lightAll;
-    fragCode += fragInputs_u_lightSm(lights);
+    if (sm)
+        fragCode += fragInputs_u_lightSm(lights);
     fragCode += fragInputs_u_matAllCookTorrance;
     if (ev)
         fragCode += fragInputs_u_matCookTorranceEnvironnment;
     fragCode += fragInputs_u_matSm;
-    fragCode += fragInputs_u_shadowMaps(lights);
+    if (sm)
+        fragCode += fragInputs_u_shadowMaps(lights);
     fragCode += fragInputs_u_cam;
     fragCode += fragOutputs_o_fragColor;
     fragCode += fragCookTorrenceFunctions;
     fragCode += fragFunctionFogBlend;
     fragCode += fragFunctionDoStereoSeparation;
-    fragCode += fragShadowTest(lights);
-    fragCode += fragMainBlinn_0_IntensityDeclaration;
-    fragCode += fragMainBlinn_1_EN_fromVert;
-    fragCode += fragMainCookTorrance_2_LightLoop;
-    if (ev)
-        fragCode += fragMainCookTorrance_3_FragColorEv;
-    else
-        fragCode += fragMainCookTorrance_3_FragColor;
-    fragCode += fragMainBlinn_4_End;
-    addCodeToShader(_shaders[1], fragCode, _name + ".frag");
-}
-
-void SLGLProgramGenerated::buildPerPixCookTorranceAo(SLVLight* lights, bool ev)
-{
-    assert(_shaders.size() > 1 &&
-           _shaders[0]->type() == ST_vertex &&
-           _shaders[1]->type() == ST_fragment);
-
-    // Assemble vertex shader code
-    string vertCode;
-    vertCode += shaderHeader((int)lights->size());
-    vertCode += vertInputs_a_pn;
-    vertCode += vertInputs_u_matrices;
-    vertCode += vertInputs_u_matrices_extra;
-    vertCode += vertInputs_a_uv1;
-    vertCode += vertOutputs_v_P_VS;
-    vertCode += vertOutputs_v_N_VS;
-    vertCode += vertOutputs_v_uv1;
-    vertCode += vertOutputs_v_R_OS;
-    vertCode += vertMainBlinn_BeginAll;
-    vertCode += vertMainBlinn_v_N_VS;
-    vertCode += vertMainBlinn_v_uv1;
-    vertCode += vertMainBlinn_v_R_OS;
-    vertCode += vertMainBlinn_EndAll;
-    addCodeToShader(_shaders[0], vertCode, _name + ".vert");
-
-    // Assemble fragment shader code
-    string fragCode;
-    fragCode += shaderHeader((int)lights->size());
-    fragCode += R"(
-in      vec3        v_P_VS;     // Interpol. point of illumination in view space (VS)
-in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
-in      vec3        v_R_OS;     // Interpol. reflect in object space
-in      vec2        v_uv1;      // Texture coordinate varying
-)";
-    fragCode += fragInputs_u_lightAll;
-    if (ev)
-        fragCode += fragInputs_u_matCookTorranceEnvironnment;
-    fragCode += fragInputs_u_matCookTorranceTextures;
-    fragCode += fragInputs_u_matAo;
-    fragCode += fragInputs_u_cam;
-    fragCode += fragOutputs_o_fragColor;
-    fragCode += fragCookTorrenceFunctions;
-    fragCode += fragFunctionFogBlend;
-    fragCode += fragFunctionDoStereoSeparation;
-    fragCode += fragMainBlinn_0_IntensityDeclaration;
-    fragCode += fragMainBlinn_1_EN_fromVert;
-    fragCode += fragMainCookTorrance_2_LightLoop;
-    if (ev)
-        fragCode += fragMainCookTorrance_3_FragColorEvAo;
-    else
-        fragCode += fragMainCookTorrance_3_FragColorAo;
-    fragCode += fragMainBlinn_4_End;
-    addCodeToShader(_shaders[1], fragCode, _name + ".frag");
-}
-
-void SLGLProgramGenerated::buildPerPixCookTorranceTm(SLVLight* lights, bool ev)
-{
-    assert(_shaders.size() > 1 &&
-           _shaders[0]->type() == ST_vertex &&
-           _shaders[1]->type() == ST_fragment);
-
-    // Assemble vertex shader code
-    string vertCode;
-    vertCode += shaderHeader((int)lights->size());
-    vertCode += vertInputs_a_pn;
-    vertCode += vertInputs_u_matrices;
-    vertCode += vertInputs_u_matrices_extra;
-    vertCode += vertInputs_a_uv1;
-    vertCode += vertOutputs_v_P_VS;
-    vertCode += vertOutputs_v_N_VS;
-    vertCode += vertOutputs_v_uv1;
-    vertCode += vertOutputs_v_R_OS;
-    vertCode += vertMainBlinn_BeginAll;
-    vertCode += vertMainBlinn_v_N_VS;
-    vertCode += vertMainBlinn_v_uv1;
-    vertCode += vertMainBlinn_v_R_OS;
-    vertCode += vertMainBlinn_EndAll;
-    addCodeToShader(_shaders[0], vertCode, _name + ".vert");
-
-    // Assemble fragment shader code
-    string fragCode;
-    fragCode += shaderHeader((int)lights->size());
-    fragCode += R"(
-in      vec3        v_P_VS;     // Interpol. point of illumination in view space (VS)
-in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
-in      vec3        v_R_OS;     // Interpol. reflect in object space
-in      vec2        v_uv1;      // Texture coordinate varying
-)";
-    fragCode += fragInputs_u_lightAll;
-    if (ev)
-        fragCode += fragInputs_u_matCookTorranceEnvironnment;
-    fragCode += fragInputs_u_matCookTorranceTextures;
-    fragCode += fragInputs_u_matTm;
-    fragCode += fragInputs_u_cam;
-    fragCode += fragOutputs_o_fragColor;
-    fragCode += fragCookTorrenceFunctions;
-    fragCode += fragFunctionFogBlend;
-    fragCode += fragFunctionDoStereoSeparation;
-    fragCode += fragMainBlinn_0_IntensityDeclaration;
-    fragCode += fragMainBlinn_1_EN_fromVert;
-    fragCode += fragMainCookTorrance_2_LightLoopTm;
-    if (ev)
-        fragCode += fragMainCookTorrance_3_FragColorTmEv;
-    else
-        fragCode += fragMainCookTorrance_3_FragColorTm;
-    fragCode += fragMainBlinn_4_End;
-    addCodeToShader(_shaders[1], fragCode, _name + ".frag");
-}
-
-void SLGLProgramGenerated::buildPerPixCookTorranceNm(SLVLight* lights, bool ev)
-{
-    assert(_shaders.size() > 1 &&
-           _shaders[0]->type() == ST_vertex &&
-           _shaders[1]->type() == ST_fragment);
-
-    // Assemble vertex shader code
-    string vertCode;
-    vertCode += shaderHeader((int)lights->size());
-    vertCode += vertInputs_a_pn;
-    vertCode += vertInputs_a_uv1;
-    vertCode += vertInputs_a_tangent;
-    vertCode += vertInputs_u_matrices;
-    vertCode += vertInputs_u_matrices_extra;
-    vertCode += vertInputs_u_lightNm;
-    vertCode += vertOutputs_v_P_WS;
-    vertCode += vertOutputs_v_P_VS;
-    vertCode += vertOutputs_v_N_VS;
-    vertCode += vertOutputs_v_uv1;
-    vertCode += vertOutputs_v_R_OS;
-    vertCode += vertOutputs_v_lightNm;
-    vertCode += vertMainBlinn_BeginAll;
-    vertCode += vertMainBlinn_v_P_WS_Sm;
-    vertCode += vertMainBlinn_v_N_VS;
-    vertCode += vertMainBlinn_v_uv1;
-    vertCode += vertMainBlinn_TBN_Nm;
-    vertCode += vertMainBlinn_v_R_OS;
-    vertCode += vertMainBlinn_EndAll;
-    addCodeToShader(_shaders[0], vertCode, _name + ".vert");
-
-    // Assemble fragment shader code
-    string fragCode;
-    fragCode += shaderHeader((int)lights->size());
-    fragCode += R"(
-in      vec3        v_P_VS;     // Interpol. point of illumination in view space (VS)
-in      vec3        v_P_WS;     // Interpol. point of illumination in world space (WS)
-in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
-in      vec3        v_R_OS;     // Interpol. reflect in object space
-in      vec2        v_uv1;      // Texture coordinate varying
-in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent space
-)";
-    fragCode += fragInputs_u_lightAll;
-    if (ev)
-        fragCode += fragInputs_u_matCookTorranceEnvironnment;
-    fragCode += fragInputs_u_matAllCookTorrance;
-    fragCode += fragInputs_u_matNm;
-    fragCode += fragInputs_u_cam;
-    fragCode += fragOutputs_o_fragColor;
-    fragCode += fragCookTorrenceFunctions;
-    fragCode += fragFunctionFogBlend;
-    fragCode += fragFunctionDoStereoSeparation;
-    fragCode += fragMainBlinn_0_IntensityDeclaration;
-    fragCode += fragMainBlinn_1_EN_fromNm0;
-    fragCode += fragMainCookTorrance_2_LightLoop;
-    if (ev)
-        fragCode += fragMainCookTorrance_3_FragColorEv;
-    else
-        fragCode += fragMainCookTorrance_3_FragColor;
-    fragCode += fragMainBlinn_4_End;
-    addCodeToShader(_shaders[1], fragCode, _name + ".frag");
-}
-
-void SLGLProgramGenerated::buildPerPixCookTorrance(SLVLight* lights, bool ev)
-{
-    assert(_shaders.size() > 1 &&
-           _shaders[0]->type() == ST_vertex &&
-           _shaders[1]->type() == ST_fragment);
-
-    // Assemble vertex shader code
-    string vertCode;
-    vertCode += shaderHeader((int)lights->size());
-    vertCode += vertInputs_a_pn;
-    vertCode += vertInputs_u_matrices;
-    vertCode += vertInputs_u_matrices_extra;
-    vertCode += vertOutputs_v_P_VS;
-    vertCode += vertOutputs_v_N_VS;
-    vertCode += vertOutputs_v_R_OS;
-    vertCode += vertMainBlinn_BeginAll;
-    vertCode += vertMainBlinn_v_N_VS;
-    vertCode += vertMainBlinn_v_R_OS;
-    vertCode += vertMainBlinn_EndAll;
-    addCodeToShader(_shaders[0], vertCode, _name + ".vert");
-
-    // Assemble fragment shader code
-    string fragCode;
-    fragCode += shaderHeader((int)lights->size());
-    fragCode += R"(
-in      vec3        v_P_VS;     // Interpol. point of illumination in view space (VS)
-in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
-in      vec3        v_R_OS;     // Interpol. reflect in object space
-)";
-    fragCode += fragInputs_u_lightAll;
-    fragCode += fragInputs_u_matAllCookTorrance;
-    if (ev)
-        fragCode += fragInputs_u_matCookTorranceEnvironnment;
-    fragCode += fragInputs_u_cam;
-    fragCode += fragOutputs_o_fragColor;
-    fragCode += fragCookTorrenceFunctions;
-    fragCode += fragFunctionFogBlend;
-    fragCode += fragFunctionDoStereoSeparation;
+    if (sm)
+        fragCode += fragShadowTest(lights);
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromVert;
     fragCode += fragMainCookTorrance_2_LightLoop;
