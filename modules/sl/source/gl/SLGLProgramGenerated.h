@@ -105,21 +105,20 @@ private:
     void buildPerPixBlinnTm(SLVLight* lights);
     void buildPerPixBlinn(SLVLight* lights);
 
-    void buildPerPixCookTorranceEvTmNmAoSm(SLVLight* lights);
-    void buildPerPixCookTorranceEvTmNmAo(SLVLight* lights);
-    void buildPerPixCookTorranceEvTmNmSm(SLVLight* lights);
-    void buildPerPixCookTorranceEvTmAoSm(SLVLight* lights);
-    void buildPerPixCookTorranceEvAoSm(SLVLight* lights);
-    void buildPerPixCookTorranceEvNmSm(SLVLight* lights);
-    void buildPerPixCookTorranceEvTmSm(SLVLight* lights);
-    void buildPerPixCookTorranceEvTmAo(SLVLight* lights);
-    void buildPerPixCookTorranceEvTmNm(SLVLight* lights);
-    void buildPerPixCookTorranceEvSm(SLVLight* lights);
-    void buildPerPixCookTorranceEvAo(SLVLight* lights);
-    void buildPerPixCookTorranceEvTm(SLVLight* lights);
-    void buildPerPixCookTorranceEvNm(SLVLight* lights);
-    void buildPerPixCookTorranceEv(SLVLight* lights);
-    void buildPerPixCookTorrance(SLVLight* lights);
+    void buildPerPixCookTorranceTmNmAoSm(SLVLight* lights, bool ev);
+    void buildPerPixCookTorranceTmNmAo(SLVLight* lights, bool ev);
+    void buildPerPixCookTorranceTmNmSm(SLVLight* lights, bool ev);
+    void buildPerPixCookTorranceTmAoSm(SLVLight* lights, bool ev);
+    void buildPerPixCookTorranceAoSm(SLVLight* lights, bool ev);
+    void buildPerPixCookTorranceNmSm(SLVLight* lights, bool ev);
+    void buildPerPixCookTorranceTmSm(SLVLight* lights, bool ev);
+    void buildPerPixCookTorranceTmAo(SLVLight* lights, bool ev);
+    void buildPerPixCookTorranceTmNm(SLVLight* lights, bool ev);
+    void buildPerPixCookTorranceSm(SLVLight* lights, bool ev);
+    void buildPerPixCookTorranceAo(SLVLight* lights, bool ev);
+    void buildPerPixCookTorranceTm(SLVLight* lights, bool ev);
+    void buildPerPixCookTorranceNm(SLVLight* lights, bool ev);
+    void buildPerPixCookTorrance(SLVLight* lights, bool ev);
 
     // Helpers
 
