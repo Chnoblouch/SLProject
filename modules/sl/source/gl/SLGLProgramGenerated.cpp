@@ -637,6 +637,7 @@ vec3 indexToColor(int index)
 )";
 
 //-----------------------------------------------------------------------------
+/*
 const string fragMainCookTorrance_2_LightLoop   = R"(
     // Init Fresnel reflection at 90 deg. (0 to N)
     vec3 F0 = vec3(0.04);           
@@ -671,15 +672,32 @@ const string fragMainCookTorrance_2_LightLoop   = R"(
         }
     }
 )";
+*/
 //-----------------------------------------------------------------------------
 
-const string fragMainCookTorrance_2_LightLoopTm   = R"(
+std::string fragMainCookTorranceMatDef(bool tm)
+{
+    std::string s;
+    if (tm)
+    {
+        s += R"(
+        vec3  matDiff  = pow(texture(u_matTextureDiffuse0, v_uv1).rgb, vec3(2.2));
+        float matMetal = texture(u_matTextureMetallic0, v_uv1).r;
+        float matRough = texture(u_matTextureRoughness0, v_uv1).r;
+    )";
+    }
+    else
+    {
+        s += R"(
+        vec3  matDiff  = u_matDiff.rgb;
+        float matMetal = u_matMetal;
+        float matRough = u_matRough;
+    )";
+    }
+    return s;
+}
 
-    // Get the material parameters out of the textures
-    vec3  matDiff  = pow(texture(u_matTextureDiffuse0, v_uv1).rgb, vec3(2.2));
-    float matMetal = texture(u_matTextureMetallic0, v_uv1).r;
-    float matRough = texture(u_matTextureRoughness0, v_uv1).r;
-
+const string fragMainCookTorrance_2_LightLoop   = R"(
     // Init Fresnel reflection at 90 deg. (0 to N)
     vec3 F0 = vec3(0.04);           
     F0 = mix(F0, matDiff.rgb, matMetal);
@@ -810,34 +828,8 @@ const string fragMainBlinn_2_LightLoopNmSm = R"(
 //-----------------------------------------------------------------------------
 const string fragMainCookTorrance_3_FragColor      = R"(
 
-    // ambient lighting (note that the next IBL tutorial will replace
-    // this ambient lighting with environment lighting).
-    vec3 ambient = vec3(0.03) * u_matDiff.rgb;
-    vec3 color = ambient + Lo;
-
-    // HDR tone-mapping
-    color = color / (color + vec3(1.0));
-    o_fragColor = vec4(color, 1.0);
-)";
-//-----------------------------------------------------------------------------
-const string fragMainCookTorrance_3_FragColorAo      = R"(
-
-    // ambient lighting (note that the next IBL tutorial will replace
-    // this ambient lighting with environment lighting).
-    float matAO    = texture(u_matTextureAo0, v_uv1).r;
-    vec3 ambient = vec3(0.03) * u_matDiff.rgb * matAO;
-    vec3 color = ambient + Lo;
-
-    // HDR tone-mapping
-    color = color / (color + vec3(1.0));
-    o_fragColor = vec4(color, 1.0);
-)";
-//-----------------------------------------------------------------------------
-const string fragMainCookTorrance_3_FragColorTm      = R"(
-
     // Build diffuse reflection for environment light map
     float exposureToneMapping = 1.0f;
-    vec3 matDiff    = texture(u_matTextureDiffuse0, v_uv1).rgb;
 
     vec3 ambient = vec3(0.03) * matDiff.rgb;
     vec3 color = ambient + Lo;
@@ -847,11 +839,10 @@ const string fragMainCookTorrance_3_FragColorTm      = R"(
     o_fragColor = vec4(mapped, 1.0);
 )";
 //-----------------------------------------------------------------------------
-const string fragMainCookTorrance_3_FragColorTmAo      = R"(
+const string fragMainCookTorrance_3_FragColorAo      = R"(
 
     // Build diffuse reflection for environment light map
     float exposureToneMapping = 1.0f;
-    vec3 matDiff    = texture(u_matTextureDiffuse0, v_uv1).rgb;
     float matAO    = texture(u_matTextureAo0, v_uv1).r;
 
     vec3 ambient = vec3(0.03) * matDiff.rgb + matAO;
@@ -862,9 +853,8 @@ const string fragMainCookTorrance_3_FragColorTmAo      = R"(
     o_fragColor = vec4(mapped, 1.0);
 )";
 
-
-
 //-----------------------------------------------------------------------------
+/*
 const string fragMainCookTorrance_3_FragColorEv      = R"(
 
     // Build diffuse reflection for environment light map
@@ -892,7 +882,9 @@ const string fragMainCookTorrance_3_FragColorEv      = R"(
     // For correct alpha blending overwrite alpha component
     o_fragColor.a = u_matDiff.a;
 )";
+*/
 //-----------------------------------------------------------------------------
+/*
 const string fragMainCookTorrance_3_FragColorEvAo      = R"(
 
     // Build diffuse reflection for environment light map
@@ -921,8 +913,9 @@ const string fragMainCookTorrance_3_FragColorEvAo      = R"(
     // For correct alpha blending overwrite alpha component
     o_fragColor.a = u_matDiff.a;
 )";
+*/
 //-----------------------------------------------------------------------------
-const string fragMainCookTorrance_3_FragColorTmEv      = R"(
+const string fragMainCookTorrance_3_FragColorEv      = R"(
 
     // Build diffuse reflection for environment light map
     float exposureToneMapping = 1.0f;
@@ -949,7 +942,7 @@ const string fragMainCookTorrance_3_FragColorTmEv      = R"(
 )";
 
 //-----------------------------------------------------------------------------
-const string fragMainCookTorrance_3_FragColorTmEvAo      = R"(
+const string fragMainCookTorrance_3_FragColorEvAo      = R"(
 
     // Build diffuse reflection for environment light map
     float exposureToneMapping = 1.0f;
@@ -975,6 +968,7 @@ const string fragMainCookTorrance_3_FragColorTmEvAo      = R"(
     vec3 mapped = vec3(1.0) - exp(-color * exposureToneMapping);
     o_fragColor = vec4(mapped, 1.0);
 )";
+
 //-----------------------------------------------------------------------------
 const string fragMainBlinn_3_FragColor      = R"(
     // Sum up all the reflected color components
@@ -1412,7 +1406,7 @@ in      vec3        v_P_VS;     // Interpol. point of illumination in view space
 in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
 in      vec3        v_R_OS;     // Interpol. reflect in object space
 in      vec2        v_uv1;      // Texture coordinate varying
-in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent space
+in      vec3        v_eyeDirTS; // Vector to the eye in tangent space
 )";
 
     if (sm)
@@ -1422,7 +1416,6 @@ in      vec3        v_P_WS;     // Interpol. point of illumination in world spac
     fragCode += fragInputs_u_lightAll;
     if (ev)
         fragCode += fragInputs_u_matCookTorranceEnvironnment;
-    fragCode += fragInputs_u_matCookTorranceTextures;
     if (sm)
     {
         fragCode += fragInputs_u_lightSm(lights);
@@ -1431,6 +1424,11 @@ in      vec3        v_P_WS;     // Interpol. point of illumination in world spac
     }
     else
         fragCode += fragInputs_u_matTmNmAo;
+    
+    if (true)
+        fragCode += fragInputs_u_matCookTorranceTextures;
+    else
+        fragCode += fragInputs_u_matAllCookTorrance;
 
     fragCode += fragInputs_u_cam;
     fragCode += fragOutputs_o_fragColor;
@@ -1441,11 +1439,13 @@ in      vec3        v_P_WS;     // Interpol. point of illumination in world spac
         fragCode += fragShadowTest(lights);
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromNm0;
-    fragCode += fragMainCookTorrance_2_LightLoopTm;
+
+    fragCode += fragMainCookTorranceMatDef(true);
+    fragCode += fragMainCookTorrance_2_LightLoop;
     if (ev)
-        fragCode += fragMainCookTorrance_3_FragColorTmEvAo;
+        fragCode += fragMainCookTorrance_3_FragColorEvAo;
     else
-        fragCode += fragMainCookTorrance_3_FragColorTmAo;
+        fragCode += fragMainCookTorrance_3_FragColorAo;
     fragCode += fragMainBlinn_4_End;
     addCodeToShader(_shaders[1], fragCode, _name + ".frag");
 }
@@ -1490,7 +1490,7 @@ in      vec3        v_P_VS;     // Interpol. point of illumination in view space
 in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
 in      vec3        v_R_OS;     // Interpol. reflect in object space
 in      vec2        v_uv1;      // Texture coordinate varying
-in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent space
+in      vec3        v_eyeDirTS; // Vector to the eye in tangent space
 )";
 
     if (sm)
@@ -1509,6 +1509,7 @@ in      vec3        v_P_WS;     // Interpol. point of illumination in world spac
     }
     else
         fragCode += fragInputs_u_matTmNm;
+
     fragCode += fragInputs_u_cam;
     fragCode += fragOutputs_o_fragColor;
     fragCode += fragCookTorrenceFunctions;
@@ -1518,11 +1519,13 @@ in      vec3        v_P_WS;     // Interpol. point of illumination in world spac
         fragCode += fragShadowTest(lights);
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromNm0;
-    fragCode += fragMainCookTorrance_2_LightLoopTm;
+
+    fragCode += fragMainCookTorranceMatDef(true);
+    fragCode += fragMainCookTorrance_2_LightLoop;
     if (ev)
-        fragCode += fragMainCookTorrance_3_FragColorTmEv;
+        fragCode += fragMainCookTorrance_3_FragColorEv;
     else
-        fragCode += fragMainCookTorrance_3_FragColorTm;
+        fragCode += fragMainCookTorrance_3_FragColor;
     fragCode += fragMainBlinn_4_End;
     addCodeToShader(_shaders[1], fragCode, _name + ".frag");
 }
@@ -1590,7 +1593,8 @@ in      vec3        v_P_WS;     // Interpol. point of illumination in world spac
         fragCode += fragShadowTest(lights);
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromVert;
-    fragCode += fragMainCookTorrance_2_LightLoopTm;
+    fragCode += fragMainCookTorranceMatDef(true);
+    fragCode += fragMainCookTorrance_2_LightLoop;
     if (ev)
         fragCode += fragMainCookTorrance_3_FragColorTmEvAo;
     else
@@ -1663,6 +1667,7 @@ in      vec3        v_P_WS;     // Interpol. point of illumination in world spac
         fragCode += fragShadowTest(lights);
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromVert;
+    fragCode += fragMainCookTorranceMatDef(false);
     fragCode += fragMainCookTorrance_2_LightLoop;
     if (ev)
         fragCode += fragMainCookTorrance_3_FragColorEvAo;
@@ -1742,6 +1747,8 @@ in      vec3        v_P_WS;     // Interpol. point of illumination in world spac
         fragCode += fragShadowTest(lights);
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromNm0;
+
+    fragCode += fragMainCookTorranceMatDef(false);
     fragCode += fragMainCookTorrance_2_LightLoop;
     if (ev)
         fragCode += fragMainCookTorrance_3_FragColorEv;
@@ -1794,7 +1801,6 @@ in      vec2        v_uv1;      // Texture coordinate varying
 in      vec3        v_P_WS;     // Interpol. point of illumination in world space (WS)
 )";
 
-
     fragCode += fragInputs_u_lightAll;
     if (ev)
         fragCode += fragInputs_u_matCookTorranceEnvironnment;
@@ -1817,7 +1823,9 @@ in      vec3        v_P_WS;     // Interpol. point of illumination in world spac
         fragCode += fragShadowTest(lights);
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromVert;
-    fragCode += fragMainCookTorrance_2_LightLoopTm;
+
+    fragCode += fragMainCookTorranceMatDef(true);
+    fragCode += fragMainCookTorrance_2_LightLoop;
     if (ev)
         fragCode += fragMainCookTorrance_3_FragColorTmEv;
     else
@@ -1884,6 +1892,8 @@ in      vec3        v_P_WS;     // Interpol. point of illumination in world spac
         fragCode += fragShadowTest(lights);
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromVert;
+
+    fragCode += fragMainCookTorranceMatDef(false);
     fragCode += fragMainCookTorrance_2_LightLoop;
     if (ev)
         fragCode += fragMainCookTorrance_3_FragColorEv;
