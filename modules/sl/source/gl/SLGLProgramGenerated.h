@@ -105,13 +105,7 @@ private:
     void buildPerPixBlinnTm(SLVLight* lights);
     void buildPerPixBlinn(SLVLight* lights);
 
-    void buildPerPixCookTorranceTmNmAo(SLVLight* lights, bool ev, bool sm);
-    void buildPerPixCookTorranceTmNm(SLVLight* lights, bool ev, bool sm);
-    void buildPerPixCookTorranceTmAo(SLVLight* lights, bool ev, bool sm);
-    void buildPerPixCookTorranceAo(SLVLight* lights, bool ev, bool sm);
-    void buildPerPixCookTorranceNm(SLVLight* lights, bool ev, bool sm);
-    void buildPerPixCookTorranceTm(SLVLight* lights, bool ev, bool sm);
-    void buildPerPixCookTorrance(SLVLight* lights, bool ev, bool sm);
+    void buildPerPixCookTorrance(SLVLight* lights, bool ev, bool sm, bool tm, bool nm, bool ao);
 
     // Helpers
 
