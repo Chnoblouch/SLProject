@@ -64,7 +64,7 @@ enum SLTextureType
     TT_irradianceCubemap,  // irradiance cubemap generated from HDR Textures
     TT_roughnessCubemap,   // prefilter roughness cubemap
     TT_brdfLUT,            // BRDF 2D look up table Texture
-    TT_nbTextureType
+    TT_numTextureType      // New texture types must be before TT_numTextureType
 };
 //-----------------------------------------------------------------------------
 //! Texture object for OpenGL texturing

@@ -3604,13 +3604,13 @@ void AppDemoGui::buildProperties(SLScene* s, SLSceneView* sv)
                     {
                     }
 
-                    if (m->nbTextures() > 0 &&
-                        ImGui::TreeNode("Tex", "Textures (%d)", m->nbTextures()))
+                    if (m->numTextures() > 0 &&
+                        ImGui::TreeNode("Tex", "Textures (%d)", m->numTextures()))
                     {
                         // SLfloat lineH = ImGui::GetTextLineHeightWithSpacing();
                         SLfloat texW = ImGui::GetWindowWidth() - 4 * ImGui::GetTreeNodeToLabelSpacing() - 10;
 
-                        for (int j = 0; j < TT_nbTextureType; j++)
+                        for (int j = 0; j < TT_numTextureType; j++)
                         {
                         for (auto& i : m->textures((SLTextureType)j))
                         {

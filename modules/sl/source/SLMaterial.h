@@ -231,7 +231,7 @@ public:
     SLfloat         kt() const { return _kt; }
     SLfloat         kn() const { return _kn; }
     SLbool          getsShadows() const { return _getsShadows; }
-    SLuint          nbTextures() { return _nbTextures; }
+    SLuint          numTextures() { return _numTextures; }
     SLGLProgram*    program() { return _program; }
     SLVNode&        nodesVisible2D() { return _nodesVisible2D; }
     SLVNode&        nodesVisible3D() { return _nodesVisible3D; }
@@ -263,9 +263,9 @@ protected:
     SLfloat         _kn{};         //!< refraction index
     SLbool          _getsShadows;  //!< true if shadows are visible on this material
     SLGLProgram*    _program{};    //!< pointer to a GLSL shader program
-    SLint           _nbTextures;
+    SLint           _numTextures;  //!< Number of textures in all _texuture vectors
 
-    SLVGLTexture    _textures[TT_nbTextureType];
+    SLVGLTexture    _textures[TT_numTextureType];
     SLVGLTexture    _textures3d;
     SLGLTexture* _errorTexture = nullptr; //!< pointer to error texture that is shown if another texture fails
     SLstring     _compileErrorTexFilePath;

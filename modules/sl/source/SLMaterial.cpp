@@ -118,27 +118,27 @@ SLMaterial::SLMaterial(SLAssetManager* am,
 
     std::cout << "make material " << std::endl;
 
-    _nbTextures = 0;
+    _numTextures = 0;
     if (texture1)
     {
         _textures[texture1->texType()].push_back(texture1);
-        _nbTextures++;
+        _numTextures++;
     }
     if (texture2)
     {
         std::cout << texture2->texType() << std::endl;
         _textures[texture2->texType()].push_back(texture2);
-        _nbTextures++;
+        _numTextures++;
     }
     if (texture3)
     {
         _textures[texture3->texType()].push_back(texture3);
-        _nbTextures++;
+        _numTextures++;
     }
     if (texture4)
     {
         _textures[texture4->texType()].push_back(texture4);
-        _nbTextures++;
+        _numTextures++;
     }
 
     // Add pointer to the global resource vectors for deallocation
@@ -400,47 +400,47 @@ SLMaterial::SLMaterial(SLAssetManager* am,
     _shininess = 125;
     _roughness = 0.5f;
     _metalness = 0.0f;
-    _nbTextures = 0;
+    _numTextures = 0;
     _lightModel = LM_CookTorrance;
     if (texture1)
     {
         _textures[texture1->texType()].push_back(texture1);
-        _nbTextures++;
+        _numTextures++;
     }
     if (texture2)
     {
         _textures[texture2->texType()].push_back(texture2);
-        _nbTextures++;
+        _numTextures++;
     }
     if (texture3)
     {
         _textures[texture3->texType()].push_back(texture3);
-        _nbTextures++;
+        _numTextures++;
     }
     if (texture4)
     {
         _textures[texture4->texType()].push_back(texture4);
-        _nbTextures++;
+        _numTextures++;
     }
     if (texture5)
     {
         _textures[texture5->texType()].push_back(texture5);
-        _nbTextures++;
+        _numTextures++;
     }
     if (texture6)
     {
         _textures[texture6->texType()].push_back(texture6);
-        _nbTextures++;
+        _numTextures++;
     }
     if (texture7)
     {
         _textures[texture7->texType()].push_back(texture7);
-        _nbTextures++;
+        _numTextures++;
     }
     if (texture8)
     {
         _textures[texture8->texType()].push_back(texture8);
-        _nbTextures++;
+        _numTextures++;
     }
     _program = shaderProg;
 
@@ -476,48 +476,48 @@ SLMaterial::SLMaterial(SLAssetManager* am,
     _shininess = 125;
     _roughness = 0.5f;
     _metalness = 0.0f;
-    _nbTextures = 0;
+    _numTextures = 0;
     _lightModel = LM_CookTorrance;
 
     if (texture1)
     {
         _textures[texture1->texType()].push_back(texture1);
-        _nbTextures++;
+        _numTextures++;
     }
     if (texture2)
     {
         _textures[texture2->texType()].push_back(texture2);
-        _nbTextures++;
+        _numTextures++;
     }
     if (texture3)
     {
         _textures[texture3->texType()].push_back(texture3);
-        _nbTextures++;
+        _numTextures++;
     }
     if (texture4)
     {
         _textures[texture4->texType()].push_back(texture4);
-        _nbTextures++;
+        _numTextures++;
     }
     if (texture5)
     {
         _textures[texture5->texType()].push_back(texture5);
-        _nbTextures++;
+        _numTextures++;
     }
     if (texture6)
     {
         _textures[texture6->texType()].push_back(texture6);
-        _nbTextures++;
+        _numTextures++;
     }
     if (texture7)
     {
         _textures[texture7->texType()].push_back(texture7);
-        _nbTextures++;
+        _numTextures++;
     }
     if (texture8)
     {
         _textures[texture8->texType()].push_back(texture8);
-        _nbTextures++;
+        _numTextures++;
     }
 
     _kr        = 0.0f;
@@ -597,7 +597,7 @@ void SLMaterial::activate(SLCamera* cam, SLVLight* lights)
     // Check if shader had compile error and the error texture should be shown
     if (_program && _program->name().find("ErrorTex") != string::npos)
     {
-        for (int i = 0; i < TT_nbTextureType; i++)
+        for (int i = 0; i < TT_numTextureType; i++)
             _textures[i].clear();
         if (!_errorTexture && !_compileErrorTexFilePath.empty())
             _errorTexture = new SLGLTexture(nullptr, _compileErrorTexFilePath);
@@ -628,7 +628,7 @@ void SLMaterial::passToUniforms(SLGLProgram* program)
     static int pass;
     // pass textures unit id to the sampler uniform
     SLuint texUnit = 0;
-    for (SLuint i = 0; i < TT_nbTextureType; i++)
+    for (SLuint i = 0; i < TT_numTextureType; i++)
     {
         int texNb = 0;
         for (SLGLTexture* texture : _textures[i])
