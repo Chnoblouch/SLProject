@@ -70,7 +70,7 @@ public:
                SLfloat         roughness,
                SLfloat         metalness,
                const SLstring& compileErrorTexFilePath = "");
- 
+
     //! Ctor for Cook-Torrance light model materials
     SLMaterial(SLAssetManager* am,
                const SLchar*   name,
@@ -148,7 +148,7 @@ public:
     {
         if (_diffuse.a < 1.0)
             return true;
-        
+
         for (int i = 0; i < _textures[TT_diffuse].size(); i++)
         {
             if (_textures[TT_diffuse][i]->hasAlpha())
@@ -237,9 +237,9 @@ public:
     SLVNode&        nodesVisible2D() { return _nodesVisible2D; }
     SLVNode&        nodesVisible3D() { return _nodesVisible3D; }
 
-    SLVGLTexture&   textures(SLTextureType type) { return _textures[type]; }
-    SLVGLTexture&   textures3d() { return _textures3d; }
-    
+    SLVGLTexture& textures(SLTextureType type) { return _textures[type]; }
+    SLVGLTexture& textures3d() { return _textures3d; }
+
     // Setters
     void assetManager(SLAssetManager* am) { _assetManager = am; }
 
@@ -266,8 +266,8 @@ protected:
     SLGLProgram*    _program{};    //!< pointer to a GLSL shader program
     SLint           _numTextures;  //!< Number of textures in all _texuture vectors
 
-    SLVGLTexture    _textures[TT_numTextureType];
-    SLVGLTexture    _textures3d;
+    SLVGLTexture _textures[TT_numTextureType];
+    SLVGLTexture _textures3d;
     SLGLTexture* _errorTexture = nullptr; //!< pointer to error texture that is shown if another texture fails
     SLstring     _compileErrorTexFilePath;
 
