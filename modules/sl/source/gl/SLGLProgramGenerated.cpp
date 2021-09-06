@@ -752,7 +752,81 @@ const string fragMainCook_2_LightLoop = R"(
         }
     }
 )";
+const string fragMainCook_2_LightLoopNm = R"(
+    // Init Fresnel reflection at 90 deg. (0 to N)
+    vec3 F0 = vec3(0.04);
+    F0 = mix(F0, u_matDiff.rgb, u_matMetal);
+
+    // Get the reflection from all lights into Lo
+    vec3 Lo = vec3(0.0);
+    for (int i = 0; i < NUM_LIGHTS; ++i)
+    {
+        if (u_lightIsOn[i])
+        {
+            if (u_lightPosVS[i].w == 0.0)
+            {
+                // We use the spot light direction as the light direction vector
+                vec3 S = normalize(-v_spotDirTS[i]);
+                directLightCookTorrance(i, N, E, S, F0,
+                                        u_matDiff.rgb,
+                                        u_matMetal,
+                                        u_matRough,
+                                        Lo);
+            }
+            else
+            {
+                vec3 L = v_lightDirTS[i]; // Vector from v_P to light in TS
+                vec3 S = normalize(-v_spotDirTS[i]);
+                pointLightCookTorrance( i, N, E, L, S, F0,
+                                        u_matDiff.rgb,
+                                        u_matMetal,
+                                        u_matRough,
+                                        Lo);
+            }
+        }
+    }
+)";
 const string fragMainCook_2_LightLoopTm = R"(
+
+    // Get the material parameters out of the textures
+    vec3  matDiff  = pow(texture(u_matTextureDiffuse0, v_uv1).rgb, vec3(2.2));
+    float matMetal = texture(u_matTextureMetallic0, v_uv1).r;
+    float matRough = texture(u_matTextureRoughness0, v_uv1).r;
+
+    // Init Fresnel reflection at 90 deg. (0 to N)
+    vec3 F0 = vec3(0.04);
+    F0 = mix(F0, matDiff.rgb, matMetal);
+
+    // Get the reflection from all lights into Lo
+    vec3 Lo = vec3(0.0);
+    for (int i = 0; i < NUM_LIGHTS; ++i)
+    {
+        if (u_lightIsOn[i])
+        {
+            if (u_lightPosVS[i].w == 0.0)
+            {
+                // We use the spot light direction as the light direction vector
+                vec3 S = normalize(-u_lightSpotDir[i].xyz);
+                directLightCookTorrance(i, N, E, S, F0,
+                                        matDiff.rgb,
+                                        matMetal,
+                                        matRough,
+                                        Lo);
+            }
+            else
+            {
+                vec3 L = u_lightPosVS[i].xyz - v_P_VS;
+                vec3 S = u_lightSpotDir[i]; // normalized spot direction in VS
+                pointLightCookTorrance( i, N, E, L, S, F0,
+                                        matDiff.rgb,
+                                        matMetal,
+                                        matRough,
+                                        Lo);
+            }
+        }
+    }
+)";
+const string fragMainCook_2_LightLoopTmNm = R"(
 
     // Get the material parameters out of the textures
     vec3  matDiff  = pow(texture(u_matTextureDiffuse0, v_uv1).rgb, vec3(2.2));
@@ -772,7 +846,7 @@ const string fragMainCook_2_LightLoopTm = R"(
             if (u_lightPosVS[i].w == 0.0)
             {
                 // We use the spot light direction as the light direction vector
-                vec3 S = normalize(-u_lightSpotDir[i].xyz);
+                vec3 S = normalize(-v_spotDirTS[i]);
                 directLightCookTorrance(i, N, E, S, F0,
                                         matDiff.rgb,
                                         matMetal,
@@ -781,8 +855,8 @@ const string fragMainCook_2_LightLoopTm = R"(
             }
             else
             {
-                vec3 L = u_lightPosVS[i].xyz - v_P_VS;
-                vec3 S = u_lightSpotDir[i]; // normalized spot direction in VS
+                vec3 L = v_lightDirTS[i]; // Vector from v_P to light in TS
+                vec3 S = normalize(-v_spotDirTS[i]);
                 pointLightCookTorrance( i, N, E, L, S, F0,
                                         matDiff.rgb,
                                         matMetal,
@@ -819,28 +893,24 @@ const string fragMainCook_3_FragColorTm = R"(
 
     // Build diffuse reflection for environment light map
     float exposureToneMapping = 1.0f;
-    vec3 matDiff    = texture(u_matTextureDiffuse0, v_uv1).rgb;
 
     vec3 ambient = vec3(0.03) * matDiff.rgb;
     vec3 color = ambient + Lo;
-    
-    // Exposure tone mapping
-    vec3 mapped = vec3(1.0) - exp(-color * exposureToneMapping);
-    o_fragColor = vec4(mapped, 1.0);
+    // HDR tonemapping
+    color = color / (color + vec3(1.0));
+    o_fragColor = vec4(color, 1.0);
 )";
 const string fragMainCook_3_FragColorTmAo = R"(
 
     // Build diffuse reflection for environment light map
     float exposureToneMapping = 1.0f;
-    vec3 matDiff    = texture(u_matTextureDiffuse0, v_uv1).rgb;
     float matAO    = texture(u_matTextureAo0, v_uv1).r;
 
     vec3 ambient = vec3(0.03) * matDiff.rgb + matAO;
     vec3 color = ambient + Lo;
-    
-    // Exposure tone mapping
-    vec3 mapped = vec3(1.0) - exp(-color * exposureToneMapping);
-    o_fragColor = vec4(mapped, 1.0);
+    // HDR tonemapping
+    color = color / (color + vec3(1.0));
+    o_fragColor = vec4(color, 1.0);
 )";
 const string fragMainCook_3_FragColorEv = R"(
 
@@ -1071,75 +1141,33 @@ void SLGLProgramGenerated::buildProgramCode(SLMaterial* mat,
     else if (mat->lightModel() == LM_CookTorrance)
     {
         if (Tm && Ao && Nm & Sm)
-        {
-            std::cout << "tm ao nm sm" << std::endl;
             buildPerPixCookTmNmAoSm(lights, Ev);
-        }
         else if (Tm && Ao && Nm)
-        {
-            std::cout << "tm ao nm" << std::endl;
             buildPerPixCookTmNmAo(lights, Ev);
-        }
         else if (Tm && Nm && Sm)
-        {
-            std::cout << "tm nm sm" << std::endl;
             buildPerPixCookTmNmSm(lights, Ev);
-        }
         else if (Tm && Ao && Sm)
-        {
-            std::cout << "tm ao sm" << std::endl;
             buildPerPixCookTmAoSm(lights, Ev);
-        }
         else if (Ao && Sm)
-        {
-            std::cout << "ao sm" << std::endl;
             buildPerPixCookAoSm(lights, Ev);
-        }
         else if (Nm && Sm)
-        {
-            std::cout << "nm sm" << std::endl;
             buildPerPixCookNmSm(lights, Ev);
-        }
         else if (Tm && Sm)
-        {
-            std::cout << "tm sm" << std::endl;
             buildPerPixCookTmSm(lights, Ev);
-        }
         else if (Tm && Ao)
-        {
-            std::cout << "tm ao" << std::endl;
             buildPerPixCookTmAo(lights, Ev);
-        }
         else if (Tm && Nm)
-        {
-            std::cout << "tm nm" << std::endl;
             buildPerPixCookTmNm(lights, Ev);
-        }
         else if (Sm)
-        {
-            std::cout << "sm" << std::endl;
             buildPerPixCookSm(lights, Ev);
-        }
         else if (Ao)
-        {
-            std::cout << "ao" << std::endl;
             buildPerPixCookAo(lights, Ev);
-        }
         else if (Tm)
-        {
-            std::cout << "tm" << std::endl;
             buildPerPixCookTm(lights, Ev);
-        }
         else if (Nm)
-        {
-            std::cout << "nm" << std::endl;
             buildPerPixCookNm(lights, Ev);
-        }
         else
-        {
-            std::cout << "N/A" << std::endl;
             buildPerPixCook(lights, Ev);
-        }
     }
     else
         SL_EXIT_MSG("Only Blinn-Phong supported yet.");
@@ -1184,7 +1212,9 @@ in      vec3        v_P_WS;     // Interpol. point of illumination in world spac
 in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
 in      vec3        v_R_OS;     // Interpol. reflect in object space
 in      vec2        v_uv1;      // Texture coordinate varying
-in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent space
+in      vec3        v_eyeDirTS; // Vector to the eye in tangent space
+in      vec3        v_lightDirTS[NUM_LIGHTS];   // Vector to light 0 in tangent space
+in      vec3        v_spotDirTS[NUM_LIGHTS];    // Spot direction in tangent space
 )";
     fragCode += fragInputs_u_lightAll;
     fragCode += fragInputs_u_lightSm(lights);
@@ -1201,7 +1231,7 @@ in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent 
     fragCode += fragShadowTest(lights);
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromNm0;
-    fragCode += fragMainCook_2_LightLoopTm;
+    fragCode += fragMainCook_2_LightLoopTmNm;
     if (ev)
         fragCode += fragMainCook_3_FragColorTmEvAo;
     else
@@ -1247,6 +1277,8 @@ in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
 in      vec3        v_R_OS;     // Interpol. reflect in object space
 in      vec2        v_uv1;      // Texture coordinate varying
 in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent space
+in      vec3        v_lightDirTS[NUM_LIGHTS];   // Vector to light 0 in tangent space
+in      vec3        v_spotDirTS[NUM_LIGHTS];    // Spot direction in tangent space
 )";
     fragCode += fragInputs_u_lightAll;
     if (ev)
@@ -1260,7 +1292,7 @@ in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent 
     fragCode += fragFunctionDoStereoSeparation;
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromNm0;
-    fragCode += fragMainCook_2_LightLoopTm;
+    fragCode += fragMainCook_2_LightLoopTmNm;
     if (ev)
         fragCode += fragMainCook_3_FragColorTmEvAo;
     else
@@ -1308,7 +1340,9 @@ in      vec3        v_P_WS;     // Interpol. point of illumination in world spac
 in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
 in      vec3        v_R_OS;     // Interpol. reflect in object space
 in      vec2        v_uv1;      // Texture coordinate varying
-in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent space
+in      vec3        v_eyeDirTS; // Vector to the eye in tangent space
+in      vec3        v_lightDirTS[NUM_LIGHTS];   // Vector to light 0 in tangent space
+in      vec3        v_spotDirTS[NUM_LIGHTS];    // Spot direction in tangent space
 )";
     fragCode += fragInputs_u_lightAll;
     fragCode += fragInputs_u_lightSm(lights);
@@ -1325,7 +1359,7 @@ in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent 
     fragCode += fragShadowTest(lights);
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromNm0;
-    fragCode += fragMainCook_2_LightLoopTm;
+    fragCode += fragMainCook_2_LightLoopTmNm;
     if (ev)
         fragCode += fragMainCook_3_FragColorTmEv;
     else
@@ -1494,6 +1528,8 @@ in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
 in      vec3        v_R_OS;     // Interpol. reflect in object space
 in      vec2        v_uv1;      // Texture coordinate varying
 in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent space
+in      vec3        v_lightDirTS[NUM_LIGHTS];   // Vector to light 0 in tangent space
+in      vec3        v_spotDirTS[NUM_LIGHTS];    // Spot direction in tangent space
 )";
     fragCode += fragInputs_u_lightAll;
     fragCode += fragInputs_u_lightSm(lights);
@@ -1667,7 +1703,9 @@ in      vec3        v_P_VS;     // Interpol. point of illumination in view space
 in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
 in      vec3        v_R_OS;     // Interpol. reflect in object space
 in      vec2        v_uv1;      // Texture coordinate varying
-in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent space
+in      vec3        v_eyeDirTS; // Vector to the eye in tangent space
+in      vec3        v_lightDirTS[NUM_LIGHTS];   // Vector to light 0 in tangent space
+in      vec3        v_spotDirTS[NUM_LIGHTS];    // Spot direction in tangent space
 )";
     fragCode += fragInputs_u_lightAll;
     if (ev)
@@ -1681,7 +1719,7 @@ in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent 
     fragCode += fragFunctionDoStereoSeparation;
     fragCode += fragMainBlinn_0_IntensityDeclaration;
     fragCode += fragMainBlinn_1_EN_fromNm0;
-    fragCode += fragMainCook_2_LightLoopTm;
+    fragCode += fragMainCook_2_LightLoopTmNm;
     if (ev)
         fragCode += fragMainCook_3_FragColorTmEv;
     else
@@ -1695,9 +1733,6 @@ void SLGLProgramGenerated::buildPerPixCookSm(SLVLight* lights, bool ev)
     assert(_shaders.size() > 1 &&
            _shaders[0]->type() == ST_vertex &&
            _shaders[1]->type() == ST_fragment);
-
-    if (ev)
-        std::cout << "has environment" << std::endl;
 
     // Assemble vertex shader code
     string vertCode;
@@ -1896,7 +1931,9 @@ in      vec3        v_P_WS;     // Interpol. point of illumination in world spac
 in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
 in      vec3        v_R_OS;     // Interpol. reflect in object space
 in      vec2        v_uv1;      // Texture coordinate varying
-in      vec3        v_eyeDirTS;                 // Vector to the eye in tangent space
+in      vec3        v_eyeDirTS; // Vector to the eye in tangent space
+in      vec3        v_lightDirTS[NUM_LIGHTS];   // Vector to light 0 in tangent space
+in      vec3        v_spotDirTS[NUM_LIGHTS];    // Spot direction in tangent space
 )";
     fragCode += fragInputs_u_lightAll;
     if (ev)

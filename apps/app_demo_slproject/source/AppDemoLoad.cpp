@@ -1430,10 +1430,10 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
                     // The center sphere has roughness and metallic encoded in textures
                     mat[i] = new SLMaterial(s,
                                             "CookTorranceMatTex",
-                                            new SLGLTexture(s, texPath + "rusty-metal_2048C.jpg"),
-                                            new SLGLTexture(s, texPath + "rusty-metal_2048N.jpg"),
-                                            new SLGLTexture(s, texPath + "rusty-metal_2048M.jpg"),
-                                            new SLGLTexture(s, texPath + "rusty-metal_2048R.jpg"),
+                                            new SLGLTexture(s, texPath + "rusty-metal_2048_C.jpg"),
+                                            new SLGLTexture(s, texPath + "rusty-metal_2048_N.jpg"),
+                                            new SLGLTexture(s, texPath + "rusty-metal_2048_M.jpg"),
+                                            new SLGLTexture(s, texPath + "rusty-metal_2048_R.jpg"),
                                             spTex);
                 }
                 else
@@ -1513,9 +1513,10 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
                                             "HDR Skybox",
                                             new SLGLUniform1f(exposure));
 
-        SLGLTexture* irrandianceMap = hdrCubeMap->mesh()->mat()->textures(TT_irradianceCubemap)[0];
-        SLGLTexture* prefilterMap   = hdrCubeMap->mesh()->mat()->textures(TT_roughnessCubemap)[0];
-        SLGLTexture* brdfLUTTexture = hdrCubeMap->mesh()->mat()->textures(TT_brdfLUT)[0];
+        std::vector<SLGLTexture*> textures = hdrCubeMap->getTextures();
+        SLGLTexture* irrandianceMap = textures[1];
+        SLGLTexture* prefilterMap   = textures[2];
+        SLGLTexture* brdfLUTTexture = textures[3];
 
         // Get preloaded shader programs
         SLGLProgram* pbr    = new SLGLProgramGeneric(s,
@@ -1542,8 +1543,8 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
         scene->addChild(cam1);
 
         // Create spheres and materials with roughness & metallic values between 0 and 1
-        const SLint nrRows  = 20;
-        const SLint nrCols  = 20;
+        const SLint nrRows  = 10;
+        const SLint nrCols  = 10;
         SLfloat     spacing = 2.5f;
         SLfloat     maxX    = (nrCols / 2) * spacing;
         SLfloat     maxY    = (nrRows / 2) * spacing;
@@ -1663,6 +1664,17 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
             SLfloat x = -maxX;
             for (SLint r = 0; r < nrCols; ++r)
             {
+                if (m == nrRows / 2 && r == nrCols / 2)
+                {
+                    // The center sphere has roughness and metallic encoded in textures
+                    mat[i] = new SLMaterial(s,
+                                            "CookTorranceMatTex",
+                                            new SLGLTexture(s, texPath + "rusty-metal_2048_C.jpg"),
+                                            new SLGLTexture(s, texPath + "rusty-metal_2048_N.jpg"),
+                                            new SLGLTexture(s, texPath + "rusty-metal_2048_M.jpg"),
+                                            new SLGLTexture(s, texPath + "rusty-metal_2048_R.jpg"));
+                }
+                else
                 {
                     // Cook-Torrance material without textures
                     mat[i] = new SLMaterial(s,

@@ -173,6 +173,7 @@ public:
     }
     void removeTextureType(SLTextureType tt)
     {
+        _numTextures -= _textures[tt].size();
         _textures[tt].clear();
     }
     void addTexture(SLGLTexture* texture);
