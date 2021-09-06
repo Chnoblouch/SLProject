@@ -73,9 +73,7 @@ out     vec3  v_lightDirTS[NUM_LIGHTS]; // Vector to the light 0 in tangent spac
 out     vec3  v_spotDirTS[NUM_LIGHTS];  // Spot direction in tangent space
 )";
 //-----------------------------------------------------------------------------
-const string vertMainBlinn_BeginAll  = R"(
-void main()
-{
+const string vertMainBlinn_v_P_VS = R"(
     v_P_VS = vec3(u_mvMatrix *  a_position); // vertex position in view space)";
 const string vertMainBlinn_v_P_WS_Sm = R"(
     v_P_WS = vec3(u_mMatrix * a_position);   // vertex position in world space)";
@@ -113,9 +111,12 @@ const string vertMainBlinn_TBN_Nm    = R"(
         v_lightDirTS[i] *= TBN;
     }
 )";
-const string vertMainBlinn_EndAll    = R"(
-    // pass the vertex w. the fix-function transform
+
+const string vertOutputVertPosition = R"(
     gl_Position = u_mvpMatrix * a_position;
+)";
+
+const string endBlock    = R"(
 }
 )";
 //-----------------------------------------------------------------------------
@@ -1255,6 +1256,13 @@ void SLGLProgramGenerated::buildProgramName(SLMaterial* mat,
             programName += "s"; // Creates shadows
     }
 }
+
+void addVaryingAttributes(std::string &vertAttributesOut, std::string &fragAttributesIn, std::string attr)
+{
+    vertAttributesOut = vertAttributesOut + "out " + attr + ";\n";
+    fragAttributesIn = fragAttributesIn + "in " + attr + ";\n";
+}
+
 //-----------------------------------------------------------------------------
 /*! Builds the GLSL program code for the vertex and fragment shaders. The code
  * is only assembled but not compiled and linked. This happens within the
@@ -1358,21 +1366,15 @@ void SLGLProgramGenerated::buildPerPixCookTorrance(SLVLight* lights, bool ev, bo
     vertUniforms += vertInputs_u_matrices;
     vertUniforms += vertInputs_u_matrices_extra;
 
-    vertAttributesOut += vertOutputs_v_P_VS;
-    vertAttributesOut += vertOutputs_v_N_VS;
-    vertAttributesOut += vertOutputs_v_uv1;
-    vertAttributesOut += vertOutputs_v_R_OS;
+    addVaryingAttributes(vertAttributesOut, fragAttributesIn, "vec3 v_P_VS");
+    addVaryingAttributes(vertAttributesOut, fragAttributesIn, "vec3 v_N_VS");
+    addVaryingAttributes(vertAttributesOut, fragAttributesIn, "vec3 v_R_OS");
+    addVaryingAttributes(vertAttributesOut, fragAttributesIn, "vec2 v_uv1");
 
+    vertMain += vertMainBlinn_v_P_VS;
     vertMain += vertMainBlinn_v_N_VS;
     vertMain += vertMainBlinn_v_uv1;
     vertMain += vertMainBlinn_v_R_OS;
-
-    fragAttributesIn += R"(
-in      vec3        v_P_VS;     // Interpol. point of illumination in view space (VS)
-in      vec3        v_N_VS;     // Interpol. normal at v_P_VS in view space
-in      vec3        v_R_OS;     // Interpol. reflect in object space
-in      vec2        v_uv1;      // Texture coordinate varying
-)";
 
     fragUniforms += fragInputs_u_lightAll;
     fragUniforms += fragInputs_u_cam;
@@ -1384,14 +1386,14 @@ in      vec2        v_uv1;      // Texture coordinate varying
 
     if (nm)
     {
-        vertAttributesIn += vertInputs_a_tangent;
         vertUniforms += vertInputs_u_lightNm;
-        vertAttributesOut += vertOutputs_v_lightNm;
         vertMain += vertMainBlinn_TBN_Nm;
         fragUniforms += fragInputs_u_matNm;
-        fragAttributesIn += R"(
-in      vec3        v_eyeDirTS; // Vector to the eye in tangent space
-)";
+
+        vertAttributesIn += vertInputs_a_tangent;
+        addVaryingAttributes(vertAttributesOut, fragAttributesIn, "vec3 v_eyeDirTS");
+        //addVaryingAttributes(vertAttributesOut, fragAttributesIn, "vec3 v_lightDirTS[NUM_LIGHTS]");
+        //addVaryingAttributes(vertAttributesOut, fragAttributesIn, "vec3 v_spotDirTS[NUM_LIGHTS]");
         fragMain += fragMainBlinn_1_EN_fromNm0;
     }
     else
@@ -1401,15 +1403,12 @@ in      vec3        v_eyeDirTS; // Vector to the eye in tangent space
 
     if (sm)
     {
-        vertMain += vertMainBlinn_v_P_WS_Sm;
-        vertAttributesOut += vertOutputs_v_P_WS;
         fragUniforms += fragInputs_u_lightSm(lights);
         fragUniforms += fragInputs_u_shadowMaps(lights);
         fragUniforms += fragInputs_u_matSm;
         fragFct += fragShadowTest(lights);
-        fragAttributesIn += R"(
-in      vec3        v_P_WS;     // Interpol. point of illumination in world space (WS)
-)";
+        vertMain += vertMainBlinn_v_P_WS_Sm;
+        addVaryingAttributes(vertAttributesOut, fragAttributesIn, "vec3 v_P_WS");
     }
 
     if (ev)
@@ -1438,15 +1437,16 @@ in      vec3        v_P_WS;     // Interpol. point of illumination in world spac
     //build vertex and fragment shader
     vertCode += vertHeader;
     vertCode += vertUniforms;
-    vertCode += vertAttributesIn;
+    vertCode += vertAttributesIn + "\n";
     vertCode += vertAttributesOut;
-    vertCode += vertMainBlinn_BeginAll;
+    vertCode += mainEntry;
     vertCode += vertMain;
-    vertCode += vertMainBlinn_EndAll;
+    vertCode += vertOutputVertPosition;
+    vertCode += endBlock;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
 
     fragCode += fragHeader;
-    fragCode += fragUniforms;
+    fragCode += fragUniforms + "\n";
     fragCode += fragAttributesIn;
     fragCode += fragOut;
     fragCode += fragFct;
@@ -1490,12 +1490,14 @@ void SLGLProgramGenerated::buildPerPixBlinnTmNmAoSm(SLVLight* lights)
     vertAttributesOut += vertOutputs_v_uv1;
     vertAttributesOut += vertOutputs_v_uv2;
     vertAttributesOut += vertOutputs_v_lightNm;
-    vertCode += vertMainBlinn_BeginAll;
+    vertCode += mainEntry;
+    vertCode += vertMainBlinn_v_P_VS;
     vertCode += vertMainBlinn_v_P_WS_Sm;
     vertCode += vertMainBlinn_v_uv1;
     vertCode += vertMainBlinn_v_uv2_Ao;
     vertCode += vertMainBlinn_TBN_Nm;
-    vertCode += vertMainBlinn_EndAll;
+    vertCode += vertOutputVertPosition;
+    vertCode += endBlock;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
 
     // Assemble fragment shader code
@@ -1548,11 +1550,13 @@ void SLGLProgramGenerated::buildPerPixBlinnTmNmAo(SLVLight* lights)
     vertCode += vertOutputs_v_uv1;
     vertCode += vertOutputs_v_uv2;
     vertCode += vertOutputs_v_lightNm;
-    vertCode += vertMainBlinn_BeginAll;
+    vertCode += mainEntry;
+    vertCode += vertMainBlinn_v_P_VS;
     vertCode += vertMainBlinn_v_uv1;
     vertCode += vertMainBlinn_v_uv2_Ao;
     vertCode += vertMainBlinn_TBN_Nm;
-    vertCode += vertMainBlinn_EndAll;
+    vertCode += vertOutputVertPosition;
+    vertCode += endBlock;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
 
     // Assemble fragment shader code
@@ -1598,11 +1602,13 @@ void SLGLProgramGenerated::buildPerPixBlinnTmNmSm(SLVLight* lights)
     vertCode += vertOutputs_v_N_VS;
     vertCode += vertOutputs_v_uv1;
     vertCode += vertOutputs_v_lightNm;
-    vertCode += vertMainBlinn_BeginAll;
+    vertCode += mainEntry;
+    vertCode += vertMainBlinn_v_P_VS;
     vertCode += vertMainBlinn_v_P_WS_Sm;
     vertCode += vertMainBlinn_v_uv1;
     vertCode += vertMainBlinn_TBN_Nm;
-    vertCode += vertMainBlinn_EndAll;
+    vertCode += vertOutputVertPosition;
+    vertCode += endBlock;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
 
     // Assemble fragment shader code
@@ -1654,12 +1660,14 @@ void SLGLProgramGenerated::buildPerPixBlinnTmAoSm(SLVLight* lights)
     vertCode += vertOutputs_v_N_VS;
     vertCode += vertOutputs_v_uv1;
     vertCode += vertOutputs_v_uv2;
-    vertCode += vertMainBlinn_BeginAll;
+    vertCode += mainEntry;
+    vertCode += vertMainBlinn_v_P_VS;
     vertCode += vertMainBlinn_v_P_WS_Sm;
     vertCode += vertMainBlinn_v_N_VS;
     vertCode += vertMainBlinn_v_uv1;
     vertCode += vertMainBlinn_v_uv2_Ao;
-    vertCode += vertMainBlinn_EndAll;
+    vertCode += vertOutputVertPosition;
+    vertCode += endBlock;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
 
     // Assemble fragment shader code
@@ -1708,11 +1716,13 @@ void SLGLProgramGenerated::buildPerPixBlinnTmSm(SLVLight* lights)
     vertCode += vertOutputs_v_P_WS;
     vertCode += vertOutputs_v_N_VS;
     vertCode += vertOutputs_v_uv1;
-    vertCode += vertMainBlinn_BeginAll;
+    vertCode += mainEntry;
+    vertCode += vertMainBlinn_v_P_VS;
     vertCode += vertMainBlinn_v_P_WS_Sm;
     vertCode += vertMainBlinn_v_N_VS;
     vertCode += vertMainBlinn_v_uv1;
-    vertCode += vertMainBlinn_EndAll;
+    vertCode += vertOutputVertPosition;
+    vertCode += endBlock;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
 
     // Assemble fragment shader code
@@ -1763,11 +1773,13 @@ void SLGLProgramGenerated::buildPerPixBlinnNmSm(SLVLight* lights)
     vertCode += vertOutputs_v_N_VS;
     vertCode += vertOutputs_v_uv1;
     vertCode += vertOutputs_v_lightNm;
-    vertCode += vertMainBlinn_BeginAll;
+    vertCode += mainEntry;
+    vertCode += vertMainBlinn_v_P_VS;
     vertCode += vertMainBlinn_v_P_WS_Sm;
     vertCode += vertMainBlinn_v_uv1;
     vertCode += vertMainBlinn_TBN_Nm;
-    vertCode += vertMainBlinn_EndAll;
+    vertCode += vertOutputVertPosition;
+    vertCode += endBlock;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
 
     // Assemble fragment shader code
@@ -1817,11 +1829,13 @@ void SLGLProgramGenerated::buildPerPixBlinnAoSm(SLVLight* lights)
     vertCode += vertOutputs_v_P_WS;
     vertCode += vertOutputs_v_N_VS;
     vertCode += vertOutputs_v_uv2;
-    vertCode += vertMainBlinn_BeginAll;
+    vertCode += mainEntry;
+    vertCode += vertMainBlinn_v_P_VS;
     vertCode += vertMainBlinn_v_P_WS_Sm;
     vertCode += vertMainBlinn_v_N_VS;
     vertCode += vertMainBlinn_v_uv2_Ao;
-    vertCode += vertMainBlinn_EndAll;
+    vertCode += vertOutputVertPosition;
+    vertCode += endBlock;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
 
     // Assemble fragment shader code
@@ -1872,11 +1886,13 @@ void SLGLProgramGenerated::buildPerPixBlinnNmAo(SLVLight* lights)
     vertCode += vertOutputs_v_uv1;
     vertCode += vertOutputs_v_uv2;
     vertCode += vertOutputs_v_lightNm;
-    vertCode += vertMainBlinn_BeginAll;
+    vertCode += mainEntry;
+    vertCode += vertMainBlinn_v_P_VS;
     vertCode += vertMainBlinn_v_uv1;
     vertCode += vertMainBlinn_v_uv2_Ao;
     vertCode += vertMainBlinn_TBN_Nm;
-    vertCode += vertMainBlinn_EndAll;
+    vertCode += vertOutputVertPosition;
+    vertCode += endBlock;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
 
     // Assemble fragment shader code
@@ -1920,11 +1936,13 @@ void SLGLProgramGenerated::buildPerPixBlinnTmAo(SLVLight* lights)
     vertCode += vertOutputs_v_N_VS;
     vertCode += vertOutputs_v_uv1;
     vertCode += vertOutputs_v_uv2;
-    vertCode += vertMainBlinn_BeginAll;
+    vertCode += mainEntry;
+    vertCode += vertMainBlinn_v_P_VS;
     vertCode += vertMainBlinn_v_N_VS;
     vertCode += vertMainBlinn_v_uv1;
     vertCode += vertMainBlinn_v_uv2_Ao;
-    vertCode += vertMainBlinn_EndAll;
+    vertCode += vertOutputVertPosition;
+    vertCode += endBlock;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
 
     // Assemble fragment shader code
@@ -1966,10 +1984,12 @@ void SLGLProgramGenerated::buildPerPixBlinnTmNm(SLVLight* lights)
     vertCode += vertOutputs_v_P_VS;
     vertCode += vertOutputs_v_uv1;
     vertCode += vertOutputs_v_lightNm;
-    vertCode += vertMainBlinn_BeginAll;
+    vertCode += mainEntry;
+    vertCode += vertMainBlinn_v_P_VS;
     vertCode += vertMainBlinn_v_uv1;
     vertCode += vertMainBlinn_TBN_Nm;
-    vertCode += vertMainBlinn_EndAll;
+    vertCode += vertOutputVertPosition;
+    vertCode += endBlock;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
 
     // Assemble fragment shader code
@@ -2009,10 +2029,12 @@ void SLGLProgramGenerated::buildPerPixBlinnSm(SLVLight* lights)
     vertCode += vertOutputs_v_P_VS;
     vertCode += vertOutputs_v_P_WS;
     vertCode += vertOutputs_v_N_VS;
-    vertCode += vertMainBlinn_BeginAll;
+    vertCode += mainEntry;
+    vertCode += vertMainBlinn_v_P_VS;
     vertCode += vertMainBlinn_v_P_WS_Sm;
     vertCode += vertMainBlinn_v_N_VS;
-    vertCode += vertMainBlinn_EndAll;
+    vertCode += vertOutputVertPosition;
+    vertCode += endBlock;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
 
     // Assemble fragment shader code
@@ -2058,10 +2080,12 @@ void SLGLProgramGenerated::buildPerPixBlinnAo(SLVLight* lights)
     vertCode += vertOutputs_v_P_VS;
     vertCode += vertOutputs_v_N_VS;
     vertCode += vertOutputs_v_uv2;
-    vertCode += vertMainBlinn_BeginAll;
+    vertCode += mainEntry;
+    vertCode += vertMainBlinn_v_P_VS;
     vertCode += vertMainBlinn_v_N_VS;
     vertCode += vertMainBlinn_v_uv2_Ao;
-    vertCode += vertMainBlinn_EndAll;
+    vertCode += vertOutputVertPosition;
+    vertCode += endBlock;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
 
     // Assemble fragment shader code
@@ -2102,10 +2126,12 @@ void SLGLProgramGenerated::buildPerPixBlinnNm(SLVLight* lights)
     vertCode += vertOutputs_v_P_VS;
     vertCode += vertOutputs_v_uv1;
     vertCode += vertOutputs_v_lightNm;
-    vertCode += vertMainBlinn_BeginAll;
+    vertCode += mainEntry;
+    vertCode += vertMainBlinn_v_P_VS;
     vertCode += vertMainBlinn_v_uv1;
     vertCode += vertMainBlinn_TBN_Nm;
-    vertCode += vertMainBlinn_EndAll;
+    vertCode += vertOutputVertPosition;
+    vertCode += endBlock;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
 
     // Assemble fragment shader code
@@ -2146,10 +2172,12 @@ void SLGLProgramGenerated::buildPerPixBlinnTm(SLVLight* lights)
     vertCode += vertOutputs_v_P_VS;
     vertCode += vertOutputs_v_N_VS;
     vertCode += vertOutputs_v_uv1;
-    vertCode += vertMainBlinn_BeginAll;
+    vertCode += mainEntry;
+    vertCode += vertMainBlinn_v_P_VS;
     vertCode += vertMainBlinn_v_N_VS;
     vertCode += vertMainBlinn_v_uv1;
-    vertCode += vertMainBlinn_EndAll;
+    vertCode += vertOutputVertPosition;
+    vertCode += endBlock;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
 
     // Assemble fragment shader code
@@ -2190,9 +2218,11 @@ void SLGLProgramGenerated::buildPerPixBlinn(SLVLight* lights)
     vertCode += vertInputs_u_matrices;
     vertCode += vertOutputs_v_P_VS;
     vertCode += vertOutputs_v_N_VS;
-    vertCode += vertMainBlinn_BeginAll;
+    vertCode += mainEntry;
+    vertCode += vertMainBlinn_v_P_VS;
     vertCode += vertMainBlinn_v_N_VS;
-    vertCode += vertMainBlinn_EndAll;
+    vertCode += vertOutputVertPosition;
+    vertCode += endBlock;
     addCodeToShader(_shaders[0], vertCode, _name + ".vert");
 
     // Assemble fragment shader code
