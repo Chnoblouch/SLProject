@@ -1,6 +1,6 @@
 //#############################################################################
 //  File:      Utils/lib-utils/source/Instrumentor.h
-//  Author:    Cherno, adaptations by Marcus Hudritsch
+//  Authors:   Cherno, adaptations by Marcus Hudritsch
 //  Purpose:   Basic instrumentation profiler for writing performance measures
 //             that can be used in Chrome://tracing app.
 //  Original:  Based on https://gist.github.com/TheCherno
@@ -21,8 +21,8 @@
 #include <mutex>
 
 /* Set PROFILING to 1 to enable profiling or to 0 for disabling profiling
- * Just add PROFILE_FUNCTION(); at the beginning of a function that you wand to
- * profile.
+ * Just add PROFILE_FUNCTION(); at the beginning of a function that you want to
+ * profile. See the Instrumentor class below on how to display the profiling data.
  */
 #define PROFILING 0
 

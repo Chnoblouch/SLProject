@@ -4,8 +4,8 @@
 //  Authors:   Michael Goettlicher, Marcus Hudritsch, Jan Dellsperger
 //  Date:      Winter 2016
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -64,7 +64,7 @@ CVCapture::~CVCapture()
 //-----------------------------------------------------------------------------
 //! Opens the capture device and returns the frame size
 /* This so far called in start if a scene uses a live video by
-setting the the CVCapture::videoType to VT_MAIN. On desktop systems the webcam
+setting the CVCapture::videoType to VT_MAIN. On desktop systems the webcam
 is the only and main camera.
 */
 CVSize2i CVCapture::open(int deviceNum)

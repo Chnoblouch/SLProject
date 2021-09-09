@@ -2,11 +2,10 @@
 //  File:      gl/SLGLImGui.cpp
 //  Purpose:   Wrapper Class around the external ImGui GUI-framework
 //             See also: https://github.com/ocornut/imgui
-//  Author:    Marcus Hudritsch
 //  Date:      October 2015
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -70,7 +69,7 @@ public:
     void init(const string& configPath) override;
 
     void onInitNewFrame(SLScene* s, SLSceneView* sv) override;
-    void onResize(SLint scrW, SLint scrH, SLfloat scr2fbX, SLfloat scr2fbY) override;
+    void onResize(SLint scrW, SLint scrH) override;
     void onPaint(const SLRecti& viewport) override;
     void onMouseDown(SLMouseButton button, SLint x, SLint y) override;
     void onMouseUp(SLMouseButton button, SLint x, SLint y) override;

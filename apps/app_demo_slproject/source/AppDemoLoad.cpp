@@ -1,10 +1,9 @@
 //#############################################################################
 //  File:      AppDemoSceneLoad.cpp
-//  Author:    Marcus Hudritsch
 //  Date:      Februar 2018
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -1279,7 +1278,7 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
             s->name("Blinn-Phong per pixel lighting");
             s->info("Per-pixel lighting with Blinn-Phong light model. "
                     "The reflection of 5 light sources is calculated per pixel. "
-                    "The light calculation is done in the fragmentshader.");
+                    "The light calculation is done in the fragment shader.");
             SLGLTexture*   texN   = new SLGLTexture(s, texPath + "earth2048_N.jpg"); // normal map
             SLGLTexture*   texH   = new SLGLTexture(s, texPath + "earth2048_H.jpg"); // height map
             SLGLProgram*   pR     = new SLGLProgramGeneric(s,
@@ -1430,10 +1429,10 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
                     // The center sphere has roughness and metallic encoded in textures
                     mat[i] = new SLMaterial(s,
                                             "CookTorranceMatTex",
-                                            new SLGLTexture(s, texPath + "rusty-metal_2048C.jpg"),
-                                            new SLGLTexture(s, texPath + "rusty-metal_2048N.jpg"),
-                                            new SLGLTexture(s, texPath + "rusty-metal_2048M.jpg"),
-                                            new SLGLTexture(s, texPath + "rusty-metal_2048R.jpg"),
+                                            new SLGLTexture(s, texPath + "rusty-metal_2048_C.jpg"),
+                                            new SLGLTexture(s, texPath + "rusty-metal_2048_N.jpg"),
+                                            new SLGLTexture(s, texPath + "rusty-metal_2048_M.jpg"),
+                                            new SLGLTexture(s, texPath + "rusty-metal_2048_R.jpg"),
                                             spTex);
                 }
                 else
@@ -1441,6 +1440,94 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
                     // Cook-Torrance material without textures
                     mat[i] = new SLMaterial(s,
                                             sp,
+                                            "CookTorranceMat",
+                                            SLCol4f::RED * 0.5f,
+                                            Utils::clamp((float)r * deltaR, 0.05f, 1.0f),
+                                            (float)m * deltaM);
+                }
+
+                SLNode* node = new SLNode(new SLSpheric(s, 1.0f, 0.0f, 180.0f, 32, 32, "Sphere", mat[i]));
+                node->translate(x, y, 0);
+                scene->addChild(node);
+                x += spacing;
+                i++;
+            }
+            y += spacing;
+        }
+
+        // Add 5 Lights: 2 point lights, 2 directional lights and 1 spot light in the center.
+        SLLight::gamma      = 2.2f;
+        SLLightSpot* light1 = new SLLightSpot(s, s, -maxX, maxY, maxY, 0.2f, 180, 0, 1000, 1000);
+        light1->attenuation(0, 0, 1);
+        SLLightDirect* light2 = new SLLightDirect(s, s, maxX, maxY, maxY, 0.5f, 0, 10, 10);
+        light2->lookAt(0, 0, 0);
+        light2->attenuation(0, 0, 1);
+        SLLightSpot* light3 = new SLLightSpot(s, s, 0, 0, maxY, 0.2f, 36, 0, 1000, 1000);
+        light3->attenuation(0, 0, 1);
+        SLLightDirect* light4 = new SLLightDirect(s, s, -maxX, -maxY, maxY, 0.5f, 0, 10, 10);
+        light4->lookAt(0, 0, 0);
+        light4->attenuation(0, 0, 1);
+        SLLightSpot* light5 = new SLLightSpot(s, s, maxX, -maxY, maxY, 0.2f, 180, 0, 1000, 1000);
+        light5->attenuation(0, 0, 1);
+        scene->addChild(light1);
+        scene->addChild(light2);
+        scene->addChild(light3);
+        scene->addChild(light4);
+        scene->addChild(light5);
+        sv->camera(cam1);
+        s->root3D(scene);
+    }
+    else if (sceneID == SID_ShaderCookAuto) //.....................................................
+    {
+        s->name("Generated shader Cook-Torrance");
+        s->info("Cook-Torrance light model. Left-Right: roughness 0.05-1, Top-Down: metallic: 1-0. "
+                "The center sphere has roughness and metallic encoded in textures. "
+                "The light model has a more produces a more physically based light reflection "
+                "than the standard Blinn-Phong light model.");
+
+        // Base root group node for the scene
+        SLNode* scene = new SLNode;
+
+        SLCamera* cam1 = new SLCamera("Camera 1");
+        cam1->translation(0, 0, 30);
+        cam1->lookAt(0, 0, 0);
+        cam1->background().colors(SLCol4f::BLACK);
+        cam1->focalDist(30);
+        cam1->setInitialState();
+        cam1->devRotLoc(&AppDemo::devRot, &AppDemo::devLoc);
+        scene->addChild(cam1);
+
+        // Create spheres and materials with roughness & metallic values between 0 and 1
+        const SLint nrRows  = 7;
+        const SLint nrCols  = 7;
+        SLfloat     spacing = 2.5f;
+        SLfloat     maxX    = (float)(nrCols - 1) * spacing * 0.5f;
+        SLfloat     maxY    = (float)(nrRows - 1) * spacing * 0.5f;
+        SLfloat     deltaR  = 1.0f / (float)(nrRows - 1);
+        SLfloat     deltaM  = 1.0f / (float)(nrCols - 1);
+
+        SLMaterial* mat[nrRows * nrCols];
+        SLint       i = 0;
+        SLfloat     y = -maxY;
+        for (SLint m = 0; m < nrRows; ++m)
+        {
+            SLfloat x = -maxX;
+            for (SLint r = 0; r < nrCols; ++r)
+            {
+                if (m == nrRows / 2 && r == nrCols / 2)
+                {
+                    // The center sphere has roughness and metallic encoded in textures
+                    mat[i] = new SLMaterial(s,
+                                            "CookTorranceMatTex",
+                                            new SLGLTexture(s, texPath + "rusty-metal_2048_C.jpg"),
+                                            new SLGLTexture(s, texPath + "rusty-metal_2048_N.jpg"),
+                                            new SLGLTexture(s, texPath + "rusty-metal_2048_M.jpg"),
+                                            new SLGLTexture(s, texPath + "rusty-metal_2048_R.jpg"));
+                }
+                else
+                {
+                    // Cook-Torrance material without textures
+                    mat[i] = new SLMaterial(s,
                                             "CookTorranceMat",
                                             SLCol4f::RED * 0.5f,
                                             Utils::clamp((float)r * deltaR, 0.05f, 1.0f),
@@ -1513,10 +1600,6 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
                                             "HDR Skybox",
                                             new SLGLUniform1f(exposure));
 
-        SLGLTexture* irrandianceMap = hdrCubeMap->mesh()->mat()->textures(TT_irradianceCubemap)[0];
-        SLGLTexture* prefilterMap   = hdrCubeMap->mesh()->mat()->textures(TT_roughnessCubemap)[0];
-        SLGLTexture* brdfLUTTexture = hdrCubeMap->mesh()->mat()->textures(TT_brdfLUT)[0];
-
         // Get preloaded shader programs
         SLGLProgram* pbr    = new SLGLProgramGeneric(s,
                                                      shaderPath + "PBR_Lighting.vert",
@@ -1542,8 +1625,8 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
         scene->addChild(cam1);
 
         // Create spheres and materials with roughness & metallic values between 0 and 1
-        const SLint nrRows  = 20;
-        const SLint nrCols  = 20;
+        const SLint nrRows  = 10;
+        const SLint nrCols  = 10;
         SLfloat     spacing = 2.5f;
         SLfloat     maxX    = (nrCols / 2) * spacing;
         SLfloat     maxY    = (nrRows / 2) * spacing;
@@ -1570,9 +1653,9 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
                                             new SLGLTexture(s, texPath + "gold-scuffed_2048_M.png"),
                                             new SLGLTexture(s, texPath + "gold-scuffed_2048_R.png"),
                                             new SLGLTexture(s, texPath + "gold-scuffed_2048_A.png"),
-                                            irrandianceMap,
-                                            prefilterMap,
-                                            brdfLUTTexture);
+                                            hdrCubeMap->irradianceCubemap(),
+                                            hdrCubeMap->roughnessCubemap(),
+                                            hdrCubeMap->brdfLUTTexture());
                 }
                 else
                 {
@@ -1583,9 +1666,9 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
                                             Utils::clamp((float)r * deltaR, 0.05f, 1.0f),
                                             (float)m * deltaM,
                                             pbr,
-                                            irrandianceMap,
-                                            prefilterMap,
-                                            brdfLUTTexture);
+                                            hdrCubeMap->irradianceCubemap(),
+                                            hdrCubeMap->roughnessCubemap(),
+                                            hdrCubeMap->brdfLUTTexture());
                 }
 
                 SLNode* node = new SLNode(new SLSpheric(s,
@@ -1620,7 +1703,132 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
         scene->addChild(light4);
 
         sv->camera(cam1);
-        sv->skybox(hdrCubeMap);
+        s->skybox(hdrCubeMap);
+        s->root3D(scene);
+
+        // Save energy
+        sv->doWaitOnIdle(true);
+    }
+    else if (sceneID == SID_ShaderIBLAuto) //......................................................
+    {
+        // Set scene name and info string
+        s->name("HDR IBL Shader Auto");
+        s->info("Image-based Lighting from skybox using high dynamic range images. "
+                "Use F4-Key to increment (decrement w. shift-F4) exposure of the HDR skybox. "
+                "It uses the Cook-Torrance light model also to calculate the ambient light part "
+                "from the surrounding HDR skybox.");
+
+        // Create uniform to control exposure
+        // this is done this way so that the exposure of the whole scene remains consistent
+        // just modify this uniform to affect the others.
+        SLGLUniform1f exposure = SLGLUniform1f(UT_const,
+                                               "u_exposure",
+                                               1.0f,
+                                               0.25f,
+                                               0.01f,
+                                               5.0f,
+                                               SLKey::K_F4);
+
+        // Clone uniform for various shaders
+        // do not modify these uniforms otherwise the exposure of the scene will not be changed correctly
+        // Create HDR CubeMap and get precalculated textures from it
+        SLSkybox* hdrCubeMap = new SLSkybox(s,
+                                            shaderPath,
+                                            texPath + "env_barce_rooftop.hdr",
+                                            SLVec2i(2048, 2048),
+                                            "HDR Skybox",
+                                            new SLGLUniform1f(exposure));
+
+        // Create a scene group node
+        SLNode* scene = new SLNode("scene node");
+
+        // Create camera and initialize its parameters
+        SLCamera* cam1 = new SLCamera("Camera 1");
+        cam1->translation(0, 0, 30);
+        cam1->lookAt(0, 0, 0);
+        cam1->background().colors(SLCol4f(0.2f, 0.2f, 0.2f));
+        cam1->focalDist(30);
+        cam1->setInitialState();
+        scene->addChild(cam1);
+
+        // Create spheres and materials with roughness & metallic values between 0 and 1
+        const SLint nrRows  = 10;
+        const SLint nrCols  = 10;
+        SLfloat     spacing = 2.5f;
+        SLfloat     maxX    = (nrCols / 2) * spacing;
+        SLfloat     maxY    = (nrRows / 2) * spacing;
+        SLfloat     deltaR  = 1.0f / (float)(nrRows);
+        SLfloat     deltaM  = 1.0f / (float)(nrCols);
+
+        SLMaterial* mat[nrRows * nrCols];
+        SLint       i = 0;
+        SLfloat     y = -maxY;
+        for (SLint m = 0; m < nrRows; ++m)
+        {
+            SLfloat x = -maxX;
+            for (SLint r = 0; r < nrCols; ++r)
+            {
+                if (m == nrRows / 2 && r == nrCols / 2)
+                {
+                    // The center sphere has roughness and metallic encoded in textures
+                    // and the prefiltered textures for IBL
+                    mat[i] = new SLMaterial(s,
+                                            "IBLMatTex",
+                                            new SLGLTexture(s, texPath + "gold-scuffed_2048_C.png"),
+                                            new SLGLTexture(s, texPath + "gold-scuffed_2048_N.png"),
+                                            new SLGLTexture(s, texPath + "gold-scuffed_2048_M.png"),
+                                            new SLGLTexture(s, texPath + "gold-scuffed_2048_R.png"),
+                                            new SLGLTexture(s, texPath + "gold-scuffed_2048_A.png"),
+                                            hdrCubeMap->irradianceCubemap(),
+                                            hdrCubeMap->roughnessCubemap(),
+                                            hdrCubeMap->brdfLUTTexture());
+                }
+                else
+                {
+                    // Cook-Torrance material with IBL but without textures
+                    mat[i] = new SLMaterial(s,
+                                            "IBLMat",
+                                            SLCol4f::WHITE * 0.5f,
+                                            Utils::clamp((float)r * deltaR, 0.05f, 1.0f),
+                                            (float)m * deltaM,
+                                            hdrCubeMap->irradianceCubemap(),
+                                            hdrCubeMap->roughnessCubemap(),
+                                            hdrCubeMap->brdfLUTTexture());
+                }
+
+                SLNode* node = new SLNode(new SLSpheric(s,
+                                                        1.0f,
+                                                        0.0f,
+                                                        180.0f,
+                                                        32,
+                                                        32,
+                                                        "Sphere",
+                                                        mat[i]));
+                node->translate(x, y, 0);
+                scene->addChild(node);
+                x += spacing;
+                i++;
+            }
+            y += spacing;
+        }
+        // Add 4 point light
+        SLLight::gamma = 2.2f;
+
+        SLLightSpot* light1 = new SLLightSpot(s, s, -maxX, maxY, maxY, 0.1f, 180, 0, 300, 300);
+        light1->attenuation(0, 0, 1);
+        light1->castsShadows(true);
+        light1->createsShadows(true);
+        scene->addChild(light1);
+
+        // Add a box which receives shadows
+        SLMaterial* matPerPixSM = new SLMaterial(s, "m1"); //, SLCol4f::WHITE, SLCol4f::WHITE, 500, 0, 0, 1, progPerPixSM);
+        SLNode*     boxNode     = new SLNode(new SLBox(s, -15, -15, -0.2, 15, 15, 0.2, "Box", matPerPixSM));
+        boxNode->translate(SLVec3f(0, 0, -10));
+        boxNode->castsShadows(false);
+        scene->addChild(boxNode);
+
+        sv->camera(cam1);
+        s->skybox(hdrCubeMap);
         s->root3D(scene);
 
         // Save energy
@@ -2008,28 +2216,25 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
         s->info("Sky box cube with cubemap skybox shader");
 
         // Create textures and materials
-        SLSkybox*    skybox    = new SLSkybox(s,
-                                              shaderPath,
-                                              texPath + "Desert+X1024_C.jpg",
-                                              texPath + "Desert-X1024_C.jpg",
-                                              texPath + "Desert+Y1024_C.jpg",
-                                              texPath + "Desert-Y1024_C.jpg",
-                                              texPath + "Desert+Z1024_C.jpg",
-                                              texPath + "Desert-Z1024_C.jpg");
-        SLGLTexture* skyboxTex = skybox->getTexture();
-
+        SLSkybox* skybox = new SLSkybox(s,
+                                        shaderPath,
+                                        texPath + "Desert+X1024_C.jpg",
+                                        texPath + "Desert-X1024_C.jpg",
+                                        texPath + "Desert+Y1024_C.jpg",
+                                        texPath + "Desert-Y1024_C.jpg",
+                                        texPath + "Desert+Z1024_C.jpg",
+                                        texPath + "Desert-Z1024_C.jpg");
         // Material for mirror
         SLMaterial* refl = new SLMaterial(s, "refl", SLCol4f::BLACK, SLCol4f::WHITE, 1000, 1.0f);
-        refl->addTexture(skyboxTex);
+        refl->addTexture(skybox->environmentCubemap());
         refl->program(new SLGLProgramGeneric(s,
                                              shaderPath + "Reflect.vert",
                                              shaderPath + "Reflect.frag"));
-
         // Material for glass
         SLMaterial* refr = new SLMaterial(s, "refr", SLCol4f::BLACK, SLCol4f::BLACK, 100, 0.1f, 0.9f, 1.5f);
         refr->translucency(1000);
         refr->transmissive(SLCol4f::WHITE);
-        refr->addTexture(skyboxTex);
+        refr->addTexture(skybox->environmentCubemap());
         refr->program(new SLGLProgramGeneric(s,
                                              shaderPath + "RefractReflect.vert",
                                              shaderPath + "RefractReflect.frag"));
@@ -2080,7 +2285,7 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
         scene->addChild(suzanne);
 
         sv->camera(cam1);
-        sv->skybox(skybox);
+        s->skybox(skybox);
 
         // pass the scene group as root node
         s->root3D(scene);
@@ -2091,7 +2296,7 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
     else if (sceneID == SID_ShaderEarth) //........................................................
     {
         s->name("Earth Shader Test");
-        s->info("Complex earth shader with 7 textures: day color, night color, normal, height & gloss map of earth, color & alphamap of clouds");
+        s->info("Complex earth shader with 7 textures: day color, night color, normal, height & gloss map of earth, color & alpha-map of clouds");
         SL_LOG("Earth Shader from Markus Knecht");
         SL_LOG("Use (SHIFT) & key X to change scale of the parallax mapping");
         SL_LOG("Use (SHIFT) & key O to change offset of the parallax mapping");
@@ -2108,18 +2313,18 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
         sp->addUniform1f(offset);
 
         // Create textures
-        SLGLTexture* texC   = new SLGLTexture(s, texPath + "earth2048_C.png");      // color map
-        SLGLTexture* texN   = new SLGLTexture(s, texPath + "earth2048_N.jpg");      // normal map
-        SLGLTexture* texH   = new SLGLTexture(s, texPath + "earth2048_H.jpg");      // height map
-        SLGLTexture* texG   = new SLGLTexture(s, texPath + "earth2048_G.jpg");      // gloss map
-        SLGLTexture* texNC  = new SLGLTexture(s, texPath + "earthNight2048_C.jpg"); // night color  map
-        SLGLTexture* texClC = new SLGLTexture(s, texPath + "earthCloud1024_C.jpg"); // cloud color map
-        SLGLTexture* texClA = new SLGLTexture(s, texPath + "earthCloud1024_A.jpg"); // cloud alpha map
+        SLGLTexture* texC   = new SLGLTexture(s, texPath + "earth2048_C.png");            // color map
+        SLGLTexture* texN   = new SLGLTexture(s, texPath + "earth2048_N.jpg");            // normal map
+        SLGLTexture* texH   = new SLGLTexture(s, texPath + "earth2048_H.jpg");            // height map
+        SLGLTexture* texG   = new SLGLTexture(s, texPath + "earth2048_G.jpg");            // gloss map
+        SLGLTexture* texNC  = new SLGLTexture(s, texPath + "earthNight2048_C.jpg");       // night color  map
+        SLGLTexture* texClC = new SLGLTexture(s, texPath + "earthCloud1024_alpha_C.png"); // cloud color map
+        // SLGLTexture* texClA = new SLGLTexture(s, texPath + "earthCloud1024_A.jpg"); // cloud alpha map
 
         // Create materials
         SLMaterial* matEarth = new SLMaterial(s, "matEarth", texC, texN, texH, texG, sp);
         matEarth->addTexture(texClC);
-        matEarth->addTexture(texClA);
+        // matEarth->addTexture(texClA);
         matEarth->addTexture(texNC);
         matEarth->shininess(4000);
         matEarth->program(sp);
@@ -2275,11 +2480,7 @@ void appDemoLoadScene(SLProjectScene* s, SLSceneView* sv, SLSceneID sceneID)
         s->name("Shadow Mapping Basic Scene");
         s->info("Shadow Mapping is a technique to render shadows.");
 
-        // Setup shadow mapping material
-        // SLGLProgram* progPerPixSM = new SLGLProgramGeneric(s,
-        //                                                   shaderPath + "PerPixBlinnSm.vert",
-        //                                                   shaderPath + "PerPixBlinnSm.frag");
-        SLMaterial* matPerPixSM = new SLMaterial(s, "m1"); //, SLCol4f::WHITE, SLCol4f::WHITE, 500, 0, 0, 1, progPerPixSM);
+        SLMaterial* matPerPixSM = new SLMaterial(s, "m1");
 
         // Base root group node for the scene
         SLNode* scene = new SLNode;
@@ -2610,7 +2811,7 @@ resolution shadows near the camera and lower resolution shadows further away.");
         light->attenuation(1, 0, 0);
         light->createsShadows(true);
         light->doCascadedShadows(true);
-        light->createShadowMap(cam1);
+        light->createShadowMapAutoSize(cam1);
         light->shadowMap()->rayCount(SLVec2i(16, 16));
         light->castsShadows(false);
         scene->addChild(light);
@@ -3823,16 +4024,16 @@ resolution shadows near the camera and lower resolution shadows further away.");
         videoTexture = new SLGLTexture(s, texPath + "LiveVideoError.png", GL_LINEAR, GL_LINEAR);
 
         // Define shader that shows on all pixels the video background
-        SLGLProgram* spVideoBackground  = new SLGLProgramGeneric(s,
-                                                                 shaderPath + "PerPixTmBackground.vert",
-                                                                 shaderPath + "PerPixTmBackground.frag");
-        SLMaterial*  matVideoBackground = new SLMaterial(s,
-                                                         "matVideoBackground",
-                                                         videoTexture,
-                                                         nullptr,
-                                                         nullptr,
-                                                         nullptr,
-                                                         spVideoBackground);
+        SLGLProgram* spVideoBackground = new SLGLProgramGeneric(s,
+                                                                shaderPath + "PerPixTmBackground.vert",
+                                                                shaderPath + "PerPixTmBackground.frag");
+        SLMaterial*  matVideoBkgd      = new SLMaterial(s,
+                                                        "matVideoBkgd",
+                                                        videoTexture,
+                                                        nullptr,
+                                                        nullptr,
+                                                        nullptr,
+                                                        spVideoBackground);
 
         SLCamera* cam1 = new SLCamera("Camera 1");
         cam1->translation(0, 2, 0);
@@ -3865,10 +4066,10 @@ resolution shadows near the camera and lower resolution shadows further away.");
                                              dataPath + "erleb-AR/models/biel/Biel-BFH-Rolex.gltf",
                                              texPath);
 
-        bfh->setMeshMat(matVideoBackground, true);
+        bfh->setMeshMat(matVideoBkgd, true);
 
         // Make terrain a video shine trough
-        // bfh->findChild<SLNode>("Terrain")->setMeshMat(matVideoBackground, true);
+        // bfh->findChild<SLNode>("Terrain")->setMeshMat(matVideoBkgd, true);
 
         /* Make buildings transparent
         SLNode* buildings = bfh->findChild<SLNode>("Buildings");
@@ -3927,39 +4128,24 @@ resolution shadows near the camera and lower resolution shadows further away.");
         sv->drawBits()->on(SL_DB_ONLYEDGES);
         s->root3D(scene);
     }
-    else if (sceneID == SID_ErlebARChristoffel) //.................................................
+    else if (sceneID == SID_ErlebARBernChristoffel) //.............................................
     {
         s->name("Christoffel Tower AR");
         s->info("Augmented Reality Christoffel Tower");
 
         // Create video texture on global pointer updated in AppDemoVideo
         videoTexture = new SLGLTexture(s, texPath + "LiveVideoError.png", GL_LINEAR, GL_LINEAR);
+        videoTexture->texType(TT_videoBkgd);
 
-        // Define shader that shows on all pixels the video background without shadow mapping
-        SLGLProgram* spVideoBackground  = new SLGLProgramGeneric(s,
-                                                                 shaderPath + "PerPixTmBackground.vert",
-                                                                 shaderPath + "PerPixTmBackground.frag");
-        SLMaterial*  matVideoBackground = new SLMaterial(s,
-                                                         "matVideoBackground",
-                                                         videoTexture,
-                                                         nullptr,
-                                                         nullptr,
-                                                         nullptr,
-                                                         spVideoBackground);
+        // Create see through video background material without shadow mapping
+        SLMaterial* matVideoBkgd = new SLMaterial(s, "matVideoBkgd", videoTexture);
+        matVideoBkgd->lightModel(LM_Custom);
 
-        // Define shader that shows on all pixels the video background with shadow mapping
-        SLGLProgram* spVideoBackgroundSM  = new SLGLProgramGeneric(s,
-                                                                   shaderPath + "PerPixTmBackgroundSm.vert",
-                                                                   shaderPath + "PerPixTmBackgroundSm.frag");
-        SLMaterial*  matVideoBackgroundSM = new SLMaterial(s,
-                                                           "matVideoBackground",
-                                                           videoTexture,
-                                                           nullptr,
-                                                           nullptr,
-                                                           nullptr,
-                                                           spVideoBackgroundSM);
-        matVideoBackgroundSM->ambient(SLCol4f(0.6f, 0.6f, 0.6f));
-        matVideoBackgroundSM->getsShadows(true);
+        // Create see through video background material with shadow mapping
+        SLMaterial* matVideoBkgdSM = new SLMaterial(s, "matVideoBkgdSM", videoTexture);
+        matVideoBkgdSM->lightModel(LM_Custom);
+        matVideoBkgdSM->ambient(SLCol4f(0.6f, 0.6f, 0.6f));
+        matVideoBkgdSM->getsShadows(true);
 
         SLCamera* cam1 = new SLCamera("Camera 1");
         cam1->translation(0, 2, 0);
@@ -3980,7 +4166,9 @@ resolution shadows near the camera and lower resolution shadows further away.");
         sunLight->attenuation(1, 0, 0);
         sunLight->doSunPowerAdaptation(true);
         sunLight->createsShadows(true);
-        sunLight->createShadowMap(-100, 150, SLVec2f(200, 150), SLVec2i(4096, 4096));
+        sunLight->createShadowMapAutoSize(cam1, SLVec2i(2048, 2048), 4);
+        sunLight->shadowMap()->cascadesFactor(3.0);
+        // sunLight->createShadowMap(-100, 150, SLVec2f(200, 150), SLVec2i(4096, 4096));
         sunLight->doSmoothShadows(true);
         sunLight->castsShadows(false);
         sunLight->shadowMinBias(0.001f);
@@ -4000,7 +4188,7 @@ resolution shadows near the camera and lower resolution shadows further away.");
 
         // Make city with hard edges and without shadow mapping
         SLNode* Umg = bern->findChild<SLNode>("Umgebung-Swisstopo");
-        Umg->setMeshMat(matVideoBackground, true);
+        Umg->setMeshMat(matVideoBkgd, true);
         Umg->setDrawBitsRec(SL_DB_WITHEDGES, true);
         Umg->castsShadows(false);
 
@@ -4009,10 +4197,10 @@ resolution shadows near the camera and lower resolution shadows further away.");
         bern->findChild<SLNode>("Baldachin-Stahl")->drawBits()->set(SL_DB_HIDDEN, true);
 
         // Set the video background shader on the baldachin and the ground with shadow mapping
-        bern->findChild<SLNode>("Baldachin-Stahl")->setMeshMat(matVideoBackgroundSM, true);
-        bern->findChild<SLNode>("Baldachin-Glas")->setMeshMat(matVideoBackgroundSM, true);
-        bern->findChild<SLNode>("Chr-Alt-Stadtboden")->setMeshMat(matVideoBackgroundSM, true);
-        bern->findChild<SLNode>("Chr-Neu-Stadtboden")->setMeshMat(matVideoBackgroundSM, true);
+        bern->findChild<SLNode>("Baldachin-Stahl")->setMeshMat(matVideoBkgdSM, true);
+        bern->findChild<SLNode>("Baldachin-Glas")->setMeshMat(matVideoBkgdSM, true);
+        bern->findChild<SLNode>("Chr-Alt-Stadtboden")->setMeshMat(matVideoBkgdSM, true);
+        bern->findChild<SLNode>("Chr-Neu-Stadtboden")->setMeshMat(matVideoBkgdSM, true);
 
         // Hide the new (last) version of the Christoffel tower
         bern->findChild<SLNode>("Chr-Neu")->drawBits()->set(SL_DB_HIDDEN, true);
@@ -4114,10 +4302,21 @@ resolution shadows near the camera and lower resolution shadows further away.");
         s->name("Augusta Raurica Temple AR");
         s->info(s->name());
 
-        string shdDir = shaderPath;
-        string texDir = texPath;
-        string datDir = dataPath + "erleb-AR/models/augst/";
+        // Create video texture on global pointer updated in AppDemoVideo
+        videoTexture = new SLGLTexture(s, texPath + "LiveVideoError.png", GL_LINEAR, GL_LINEAR);
+        videoTexture->texType(TT_videoBkgd);
 
+        // Create see through video background material without shadow mapping
+        SLMaterial* matVideoBkgd = new SLMaterial(s, "matVideoBkgd", videoTexture);
+        matVideoBkgd->lightModel(LM_Custom);
+
+        // Create see through video background material with shadow mapping
+        SLMaterial* matVideoBkgdSM = new SLMaterial(s, "matVideoBkgdSM", videoTexture);
+        matVideoBkgdSM->lightModel(LM_Custom);
+        matVideoBkgdSM->ambient(SLCol4f(0.6f, 0.6f, 0.6f));
+        matVideoBkgdSM->getsShadows(true);
+
+        // Set the camera
         SLCamera* cam1 = new SLCamera("Camera 1");
         cam1->translation(0, 50, -150);
         cam1->lookAt(0, 0, 0);
@@ -4125,37 +4324,14 @@ resolution shadows near the camera and lower resolution shadows further away.");
         cam1->clipFar(400);
         cam1->focalDist(150);
         cam1->devRotLoc(&AppDemo::devRot, &AppDemo::devLoc);
-
-        // Create video texture and turn on live video
-        videoTexture = new SLGLTexture(s, texDir + "LiveVideoError.png", GL_LINEAR, GL_LINEAR);
         cam1->background().texture(videoTexture);
+
+        // Turn on main video
         CVCapture::instance()->videoType(VT_MAIN);
 
-        // Define shader that shows on all pixels the video background
-        SLGLProgram* spVideoBackground  = new SLGLProgramGeneric(s,
-                                                                 shdDir + "PerPixTmBackground.vert",
-                                                                 shdDir + "PerPixTmBackground.frag");
-        SLMaterial*  matVideoBackground = new SLMaterial(s,
-                                                         "matVideoBackground",
-                                                         videoTexture,
-                                                         nullptr,
-                                                         nullptr,
-                                                         nullptr,
-                                                         spVideoBackground);
-
-        // Define shader that shows on all pixels the video background with shadow mapping
-        SLGLProgram* spVideoBackgroundSM  = new SLGLProgramGeneric(s,
-                                                                   shdDir + "PerPixTmBackgroundSm.vert",
-                                                                   shdDir + "PerPixTmBackgroundSm.frag");
-        SLMaterial*  matVideoBackgroundSM = new SLMaterial(s,
-                                                           "matVideoBackgroundSM",
-                                                           videoTexture,
-                                                           nullptr,
-                                                           nullptr,
-                                                           nullptr,
-                                                           spVideoBackgroundSM);
-        matVideoBackgroundSM->ambient(SLCol4f(0.6f, 0.6f, 0.6f));
-        matVideoBackgroundSM->getsShadows(true);
+        string shdDir = shaderPath;
+        string texDir = texPath;
+        string datDir = dataPath + "erleb-AR/models/augst/";
 
         // Create directional light for the sunlight
         SLLightDirect* sunLight = new SLLightDirect(s, s, 1.0f);
@@ -4164,7 +4340,9 @@ resolution shadows near the camera and lower resolution shadows further away.");
         sunLight->attenuation(1, 0, 0);
         sunLight->doSunPowerAdaptation(true);
         sunLight->createsShadows(true);
-        sunLight->createShadowMap(-100, 250, SLVec2f(210, 180), SLVec2i(4096, 4096));
+        sunLight->createShadowMapAutoSize(cam1, SLVec2i(2048, 2048), 4);
+        sunLight->shadowMap()->cascadesFactor(3.0);
+        // sunLight->createShadowMap(-100, 250, SLVec2f(210, 180), SLVec2i(4096, 4096));
         sunLight->doSmoothShadows(true);
         sunLight->castsShadows(false);
         sunLight->shadowMinBias(0.001f);
@@ -4187,24 +4365,24 @@ resolution shadows near the camera and lower resolution shadows further away.");
 
         // Let the video shine through on some objects without shadow mapping
         SLNode* tmpUnderground = thtAndTmp->findChild<SLNode>("TmpUnderground");
-        if (tmpUnderground) tmpUnderground->setMeshMat(matVideoBackground, true);
+        if (tmpUnderground) tmpUnderground->setMeshMat(matVideoBkgd, true);
         SLNode* thtUnderground = thtAndTmp->findChild<SLNode>("ThtUnderground");
-        if (thtUnderground) thtUnderground->setMeshMat(matVideoBackground, true);
+        if (thtUnderground) thtUnderground->setMeshMat(matVideoBkgd, true);
 
         // Let the video shine through on some objects with shadow mapping
         SLNode* tmpFloor = thtAndTmp->findChild<SLNode>("TmpFloor");
-        if (tmpFloor) tmpFloor->setMeshMat(matVideoBackgroundSM, true);
+        if (tmpFloor) tmpFloor->setMeshMat(matVideoBkgdSM, true);
 
         SLNode* terrain = thtAndTmp->findChild<SLNode>("Terrain");
         if (terrain)
         {
-            terrain->setMeshMat(matVideoBackgroundSM, true);
+            terrain->setMeshMat(matVideoBkgdSM, true);
             terrain->castsShadows(false);
         }
         SLNode* thtFrontTerrain = thtAndTmp->findChild<SLNode>("ThtFrontTerrain");
         if (thtFrontTerrain)
         {
-            thtFrontTerrain->setMeshMat(matVideoBackgroundSM, true);
+            thtFrontTerrain->setMeshMat(matVideoBkgdSM, true);
             thtFrontTerrain->castsShadows(false);
         }
 
@@ -4267,10 +4445,21 @@ resolution shadows near the camera and lower resolution shadows further away.");
         s->name("Augusta Raurica Theater AR");
         s->info(s->name());
 
-        string shdDir = shaderPath;
-        string texDir = texPath;
-        string datDir = dataPath + "erleb-AR/models/augst/";
+        // Create video texture on global pointer updated in AppDemoVideo
+        videoTexture = new SLGLTexture(s, texPath + "LiveVideoError.png", GL_LINEAR, GL_LINEAR);
+        videoTexture->texType(TT_videoBkgd);
 
+        // Create see through video background material without shadow mapping
+        SLMaterial* matVideoBkgd = new SLMaterial(s, "matVideoBkgd", videoTexture);
+        matVideoBkgd->lightModel(LM_Custom);
+
+        // Create see through video background material with shadow mapping
+        SLMaterial* matVideoBkgdSM = new SLMaterial(s, "matVideoBkgdSM", videoTexture);
+        matVideoBkgdSM->lightModel(LM_Custom);
+        matVideoBkgdSM->ambient(SLCol4f(0.6f, 0.6f, 0.6f));
+        matVideoBkgdSM->getsShadows(true);
+
+        // Setup the camera
         SLCamera* cam1 = new SLCamera("Camera 1");
         cam1->translation(0, 50, -150);
         cam1->lookAt(0, 0, 0);
@@ -4278,37 +4467,14 @@ resolution shadows near the camera and lower resolution shadows further away.");
         cam1->clipFar(400);
         cam1->focalDist(150);
         cam1->devRotLoc(&AppDemo::devRot, &AppDemo::devLoc);
-
-        // Create video texture and turn on live video
-        videoTexture = new SLGLTexture(s, texDir + "LiveVideoError.png", GL_LINEAR, GL_LINEAR);
         cam1->background().texture(videoTexture);
+
+        // Turn on main video
         CVCapture::instance()->videoType(VT_MAIN);
 
-        // Define shader that shows on all pixels the video background
-        SLGLProgram* spVideoBackground  = new SLGLProgramGeneric(s,
-                                                                 shdDir + "PerPixTmBackground.vert",
-                                                                 shdDir + "PerPixTmBackground.frag");
-        SLMaterial*  matVideoBackground = new SLMaterial(s,
-                                                         "matVideoBackground",
-                                                         videoTexture,
-                                                         nullptr,
-                                                         nullptr,
-                                                         nullptr,
-                                                         spVideoBackground);
-
-        // Define shader that shows on all pixels the video background with shadow mapping
-        SLGLProgram* spVideoBackgroundSM  = new SLGLProgramGeneric(s,
-                                                                   shdDir + "PerPixTmBackgroundSm.vert",
-                                                                   shdDir + "PerPixTmBackgroundSm.frag");
-        SLMaterial*  matVideoBackgroundSM = new SLMaterial(s,
-                                                           "matVideoBackgroundSM",
-                                                           videoTexture,
-                                                           nullptr,
-                                                           nullptr,
-                                                           nullptr,
-                                                           spVideoBackgroundSM);
-        matVideoBackgroundSM->ambient(SLCol4f(0.6f, 0.6f, 0.6f));
-        matVideoBackgroundSM->getsShadows(true);
+        string shdDir = shaderPath;
+        string texDir = texPath;
+        string datDir = dataPath + "erleb-AR/models/augst/";
 
         // Create directional light for the sunlight
         SLLightDirect* sunLight = new SLLightDirect(s, s, 1.0f);
@@ -4317,7 +4483,9 @@ resolution shadows near the camera and lower resolution shadows further away.");
         sunLight->attenuation(1, 0, 0);
         sunLight->doSunPowerAdaptation(true);
         sunLight->createsShadows(true);
-        sunLight->createShadowMap(-100, 250, SLVec2f(210, 180), SLVec2i(4096, 4096));
+        sunLight->createShadowMapAutoSize(cam1, SLVec2i(2048, 2048), 4);
+        sunLight->shadowMap()->cascadesFactor(3.0);
+        // sunLight->createShadowMap(-100, 250, SLVec2f(210, 180), SLVec2i(4096, 4096));
         sunLight->doSmoothShadows(true);
         sunLight->castsShadows(false);
         sunLight->shadowMinBias(0.001f);
@@ -4340,24 +4508,24 @@ resolution shadows near the camera and lower resolution shadows further away.");
 
         // Let the video shine through on some objects without shadow mapping
         SLNode* tmpUnderground = thtAndTmp->findChild<SLNode>("TmpUnderground");
-        if (tmpUnderground) tmpUnderground->setMeshMat(matVideoBackground, true);
+        if (tmpUnderground) tmpUnderground->setMeshMat(matVideoBkgd, true);
         SLNode* thtUnderground = thtAndTmp->findChild<SLNode>("ThtUnderground");
-        if (thtUnderground) thtUnderground->setMeshMat(matVideoBackground, true);
+        if (thtUnderground) thtUnderground->setMeshMat(matVideoBkgd, true);
 
         // Let the video shine through on some objects with shadow mapping
         SLNode* tmpFloor = thtAndTmp->findChild<SLNode>("TmpFloor");
-        if (tmpFloor) tmpFloor->setMeshMat(matVideoBackgroundSM, true);
+        if (tmpFloor) tmpFloor->setMeshMat(matVideoBkgdSM, true);
 
         SLNode* terrain = thtAndTmp->findChild<SLNode>("Terrain");
         if (terrain)
         {
-            terrain->setMeshMat(matVideoBackgroundSM, true);
+            terrain->setMeshMat(matVideoBkgdSM, true);
             terrain->castsShadows(false);
         }
         SLNode* thtFrontTerrain = thtAndTmp->findChild<SLNode>("ThtFrontTerrain");
         if (thtFrontTerrain)
         {
-            thtFrontTerrain->setMeshMat(matVideoBackgroundSM, true);
+            thtFrontTerrain->setMeshMat(matVideoBkgdSM, true);
             thtFrontTerrain->castsShadows(false);
         }
 
@@ -4420,10 +4588,21 @@ resolution shadows near the camera and lower resolution shadows further away.");
         s->name("Augusta Raurica AR Temple and Theater");
         s->info(s->name());
 
-        string shdDir = shaderPath;
-        string texDir = texPath;
-        string datDir = dataPath + "erleb-AR/models/augst/";
+        // Create video texture on global pointer updated in AppDemoVideo
+        videoTexture = new SLGLTexture(s, texPath + "LiveVideoError.png", GL_LINEAR, GL_LINEAR);
+        videoTexture->texType(TT_videoBkgd);
 
+        // Create see through video background material without shadow mapping
+        SLMaterial* matVideoBkgd = new SLMaterial(s, "matVideoBkgd", videoTexture);
+        matVideoBkgd->lightModel(LM_Custom);
+
+        // Create see through video background material with shadow mapping
+        SLMaterial* matVideoBkgdSM = new SLMaterial(s, "matVideoBkgdSM", videoTexture);
+        matVideoBkgdSM->lightModel(LM_Custom);
+        matVideoBkgdSM->ambient(SLCol4f(0.6f, 0.6f, 0.6f));
+        matVideoBkgdSM->getsShadows(true);
+
+        // Setup the camera
         SLCamera* cam1 = new SLCamera("Camera 1");
         cam1->translation(0, 50, -150);
         cam1->lookAt(0, 0, 0);
@@ -4431,37 +4610,14 @@ resolution shadows near the camera and lower resolution shadows further away.");
         cam1->clipFar(400);
         cam1->focalDist(150);
         cam1->devRotLoc(&AppDemo::devRot, &AppDemo::devLoc);
-
-        // Create video texture and turn on live video
-        videoTexture = new SLGLTexture(s, texDir + "LiveVideoError.png", GL_LINEAR, GL_LINEAR);
         cam1->background().texture(videoTexture);
+
+        // Turn on main video
         CVCapture::instance()->videoType(VT_MAIN);
 
-        // Define shader that shows on all pixels the video background
-        SLGLProgram* spVideoBackground  = new SLGLProgramGeneric(s,
-                                                                 shdDir + "PerPixTmBackground.vert",
-                                                                 shdDir + "PerPixTmBackground.frag");
-        SLMaterial*  matVideoBackground = new SLMaterial(s,
-                                                         "matVideoBackground",
-                                                         videoTexture,
-                                                         nullptr,
-                                                         nullptr,
-                                                         nullptr,
-                                                         spVideoBackground);
-
-        // Define shader that shows on all pixels the video background with shadow mapping
-        SLGLProgram* spVideoBackgroundSM  = new SLGLProgramGeneric(s,
-                                                                   shdDir + "PerPixTmBackgroundSm.vert",
-                                                                   shdDir + "PerPixTmBackgroundSm.frag");
-        SLMaterial*  matVideoBackgroundSM = new SLMaterial(s,
-                                                           "matVideoBackgroundSM",
-                                                           videoTexture,
-                                                           nullptr,
-                                                           nullptr,
-                                                           nullptr,
-                                                           spVideoBackgroundSM);
-        matVideoBackgroundSM->ambient(SLCol4f(0.6f, 0.6f, 0.6f));
-        matVideoBackgroundSM->getsShadows(true);
+        string shdDir = shaderPath;
+        string texDir = texPath;
+        string datDir = dataPath + "erleb-AR/models/augst/";
 
         // Create directional light for the sunlight
         SLLightDirect* sunLight = new SLLightDirect(s, s, 1.0f);
@@ -4470,7 +4626,10 @@ resolution shadows near the camera and lower resolution shadows further away.");
         sunLight->attenuation(1, 0, 0);
         sunLight->doSunPowerAdaptation(true);
         sunLight->createsShadows(true);
-        sunLight->createShadowMap(-100, 250, SLVec2f(210, 180), SLVec2i(4096, 4096));
+        sunLight->createShadowMapAutoSize(cam1, SLVec2i(2048, 2048), 4);
+        sunLight->shadowMap()->cascadesFactor(3.0);
+        // Old stanard single map shadow map
+        // sunLight->createShadowMap(-100, 250, SLVec2f(210, 180), SLVec2i(4096, 4096));
         sunLight->doSmoothShadows(true);
         sunLight->castsShadows(false);
         sunLight->shadowMinBias(0.001f);
@@ -4493,24 +4652,24 @@ resolution shadows near the camera and lower resolution shadows further away.");
 
         // Let the video shine through on some objects without shadow mapping
         SLNode* tmpUnderground = thtAndTmp->findChild<SLNode>("TmpUnderground");
-        if (tmpUnderground) tmpUnderground->setMeshMat(matVideoBackground, true);
+        if (tmpUnderground) tmpUnderground->setMeshMat(matVideoBkgd, true);
         SLNode* thtUnderground = thtAndTmp->findChild<SLNode>("ThtUnderground");
-        if (thtUnderground) thtUnderground->setMeshMat(matVideoBackground, true);
+        if (thtUnderground) thtUnderground->setMeshMat(matVideoBkgd, true);
 
         // Let the video shine through on some objects with shadow mapping
         SLNode* tmpFloor = thtAndTmp->findChild<SLNode>("TmpFloor");
-        if (tmpFloor) tmpFloor->setMeshMat(matVideoBackgroundSM, true);
+        if (tmpFloor) tmpFloor->setMeshMat(matVideoBkgdSM, true);
 
         SLNode* terrain = thtAndTmp->findChild<SLNode>("Terrain");
         if (terrain)
         {
-            terrain->setMeshMat(matVideoBackgroundSM, true);
+            terrain->setMeshMat(matVideoBkgdSM, true);
             terrain->castsShadows(false);
         }
         SLNode* thtFrontTerrain = thtAndTmp->findChild<SLNode>("ThtFrontTerrain");
         if (thtFrontTerrain)
         {
-            thtFrontTerrain->setMeshMat(matVideoBackgroundSM, true);
+            thtFrontTerrain->setMeshMat(matVideoBkgdSM, true);
             thtFrontTerrain->castsShadows(false);
         }
 
@@ -4609,6 +4768,21 @@ resolution shadows near the camera and lower resolution shadows further away.");
         s->name("Aventicum Amphitheatre AR (AO)");
         s->info("Augmented Reality for Aventicum Amphitheatre (AO)");
 
+        // Create video texture on global pointer updated in AppDemoVideo
+        videoTexture = new SLGLTexture(s, texPath + "LiveVideoError.png", GL_LINEAR, GL_LINEAR);
+        videoTexture->texType(TT_videoBkgd);
+
+        // Create see through video background material without shadow mapping
+        SLMaterial* matVideoBkgd = new SLMaterial(s, "matVideoBkgd", videoTexture);
+        matVideoBkgd->lightModel(LM_Custom);
+
+        // Create see through video background material with shadow mapping
+        SLMaterial* matVideoBkgdSM = new SLMaterial(s, "matVideoBkgdSM", videoTexture);
+        matVideoBkgdSM->lightModel(LM_Custom);
+        matVideoBkgdSM->ambient(SLCol4f(0.6f, 0.6f, 0.6f));
+        matVideoBkgdSM->getsShadows(true);
+
+        // Setup the camera
         SLCamera* cam1 = new SLCamera("Camera 1");
         cam1->translation(0, 50, -150);
         cam1->lookAt(0, 0, 0);
@@ -4617,37 +4791,10 @@ resolution shadows near the camera and lower resolution shadows further away.");
         cam1->focalDist(150);
         cam1->setInitialState();
         cam1->devRotLoc(&AppDemo::devRot, &AppDemo::devLoc);
-
-        // Create video texture and turn on live video
-        videoTexture = new SLGLTexture(s, texPath + "LiveVideoError.png", GL_LINEAR, GL_LINEAR);
         cam1->background().texture(videoTexture);
+
+        // Turn on main video
         CVCapture::instance()->videoType(VT_MAIN);
-
-        // Define shader that shows on all pixels the video background
-        SLGLProgram* spVideoBackground  = new SLGLProgramGeneric(s,
-                                                                 shaderPath + "PerPixTmBackground.vert",
-                                                                 shaderPath + "PerPixTmBackground.frag");
-        SLMaterial*  matVideoBackground = new SLMaterial(s,
-                                                         "matVideoBackground",
-                                                         videoTexture,
-                                                         nullptr,
-                                                         nullptr,
-                                                         nullptr,
-                                                         spVideoBackground);
-
-        // Define shader that shows on all pixels the video background with shadow mapping
-        SLGLProgram* spVideoBackgroundSM  = new SLGLProgramGeneric(s,
-                                                                   shaderPath + "PerPixTmBackgroundSm.vert",
-                                                                   shaderPath + "PerPixTmBackgroundSm.frag");
-        SLMaterial*  matVideoBackgroundSM = new SLMaterial(s,
-                                                           "matVideoBackground",
-                                                           videoTexture,
-                                                           nullptr,
-                                                           nullptr,
-                                                           nullptr,
-                                                           spVideoBackgroundSM);
-        matVideoBackgroundSM->ambient(SLCol4f(0.6f, 0.6f, 0.6f));
-        matVideoBackgroundSM->getsShadows(true);
 
         // Create directional light for the sunlight
         SLLightDirect* sunLight = new SLLightDirect(s, s, 1.0f);
@@ -4656,7 +4803,9 @@ resolution shadows near the camera and lower resolution shadows further away.");
         sunLight->translation(0, 1, 0);
         sunLight->doSunPowerAdaptation(true);
         sunLight->createsShadows(true);
-        sunLight->createShadowMap(-70, 70, SLVec2f(140, 100), SLVec2i(4096, 4096));
+        sunLight->createShadowMapAutoSize(cam1, SLVec2i(2048, 2048), 4);
+        sunLight->shadowMap()->cascadesFactor(3.0);
+        // sunLight->createShadowMap(-70, 70, SLVec2f(140, 100), SLVec2i(4096, 4096));
         sunLight->doSmoothShadows(true);
         sunLight->castsShadows(false);
         sunLight->shadowMinBias(0.001f);
@@ -4679,10 +4828,10 @@ resolution shadows near the camera and lower resolution shadows further away.");
         amphiTheatre->rotate(13.25f, 0, 1, 0, TS_parent);
 
         // Let the video shine through some objects
-        amphiTheatre->findChild<SLNode>("Tht-Aussen-Untergrund")->setMeshMat(matVideoBackground, true);
-        amphiTheatre->findChild<SLNode>("Tht-Eingang-Ost-Boden")->setMeshMat(matVideoBackgroundSM, true);
-        amphiTheatre->findChild<SLNode>("Tht-Arenaboden")->setMeshMat(matVideoBackgroundSM, true);
-        // amphiTheatre->findChild<SLNode>("Tht-Aussen-Terrain")->setMeshMat(matVideoBackgroundSM, true);
+        amphiTheatre->findChild<SLNode>("Tht-Aussen-Untergrund")->setMeshMat(matVideoBkgd, true);
+        amphiTheatre->findChild<SLNode>("Tht-Eingang-Ost-Boden")->setMeshMat(matVideoBkgdSM, true);
+        amphiTheatre->findChild<SLNode>("Tht-Arenaboden")->setMeshMat(matVideoBkgdSM, true);
+        // amphiTheatre->findChild<SLNode>("Tht-Aussen-Terrain")->setMeshMat(matVideoBkgdSM, true);
 
         // Add axis object a world origin
         SLNode* axis = new SLNode(new SLCoordAxis(s), "Axis Node");
@@ -4741,6 +4890,21 @@ resolution shadows near the camera and lower resolution shadows further away.");
         s->name("Aventicum Cigognier AR (AO)");
         s->info("Augmented Reality for Aventicum Cigognier Temple");
 
+        // Create video texture on global pointer updated in AppDemoVideo
+        videoTexture = new SLGLTexture(s, texPath + "LiveVideoError.png", GL_LINEAR, GL_LINEAR);
+        videoTexture->texType(TT_videoBkgd);
+
+        // Create see through video background material without shadow mapping
+        SLMaterial* matVideoBkgd = new SLMaterial(s, "matVideoBkgd", videoTexture);
+        matVideoBkgd->lightModel(LM_Custom);
+
+        // Create see through video background material with shadow mapping
+        SLMaterial* matVideoBkgdSM = new SLMaterial(s, "matVideoBkgdSM", videoTexture);
+        matVideoBkgdSM->lightModel(LM_Custom);
+        matVideoBkgdSM->ambient(SLCol4f(0.6f, 0.6f, 0.6f));
+        matVideoBkgdSM->getsShadows(true);
+
+        // Setup the camera
         SLCamera* cam1 = new SLCamera("Camera 1");
         cam1->translation(0, 50, -150);
         cam1->lookAt(0, 0, 0);
@@ -4749,37 +4913,10 @@ resolution shadows near the camera and lower resolution shadows further away.");
         cam1->focalDist(150);
         cam1->setInitialState();
         cam1->devRotLoc(&AppDemo::devRot, &AppDemo::devLoc);
-
-        // Create video texture and turn on live video
-        videoTexture = new SLGLTexture(s, texPath + "LiveVideoError.png", GL_LINEAR, GL_LINEAR);
         cam1->background().texture(videoTexture);
+
+        // Turn on main video
         CVCapture::instance()->videoType(VT_MAIN);
-
-        // Define shader that shows on all pixels the video background
-        SLGLProgram* spVideoBackground  = new SLGLProgramGeneric(s,
-                                                                 shaderPath + "PerPixTmBackground.vert",
-                                                                 shaderPath + "PerPixTmBackground.frag");
-        SLMaterial*  matVideoBackground = new SLMaterial(s,
-                                                         "matVideoBackground",
-                                                         videoTexture,
-                                                         nullptr,
-                                                         nullptr,
-                                                         nullptr,
-                                                         spVideoBackground);
-
-        // Define shader that shows on all pixels the video background with shadow mapping
-        SLGLProgram* spVideoBackgroundSM  = new SLGLProgramGeneric(s,
-                                                                   shaderPath + "PerPixTmBackgroundSm.vert",
-                                                                   shaderPath + "PerPixTmBackgroundSm.frag");
-        SLMaterial*  matVideoBackgroundSM = new SLMaterial(s,
-                                                           "matVideoBackground",
-                                                           videoTexture,
-                                                           nullptr,
-                                                           nullptr,
-                                                           nullptr,
-                                                           spVideoBackgroundSM);
-        matVideoBackgroundSM->ambient(SLCol4f(0.6f, 0.6f, 0.6f));
-        matVideoBackgroundSM->getsShadows(true);
 
         // Create directional light for the sunlight
         SLLightDirect* sunLight = new SLLightDirect(s, s, 1.0f);
@@ -4789,7 +4926,9 @@ resolution shadows near the camera and lower resolution shadows further away.");
         sunLight->lookAt(10, 0, 10);
         sunLight->doSunPowerAdaptation(true);
         sunLight->createsShadows(true);
-        sunLight->createShadowMap(-70, 120, SLVec2f(150, 150), SLVec2i(2048, 2048));
+        sunLight->createShadowMapAutoSize(cam1, SLVec2i(2048, 2048), 4);
+        sunLight->shadowMap()->cascadesFactor(3.0);
+        // sunLight->createShadowMap(-70, 120, SLVec2f(150, 150), SLVec2i(2048, 2048));
         sunLight->doSmoothShadows(true);
         sunLight->castsShadows(false);
         sunLight->shadowMinBias(0.001f);
@@ -4812,8 +4951,8 @@ resolution shadows near the camera and lower resolution shadows further away.");
         cigognier->rotate(-36.52f, 0, 1, 0, TS_parent);
 
         // Let the video shine through some objects
-        cigognier->findChild<SLNode>("Tmp-Sol-Pelouse")->setMeshMat(matVideoBackgroundSM, true);
-        cigognier->findChild<SLNode>("Tmp-Souterrain")->setMeshMat(matVideoBackground, true);
+        cigognier->findChild<SLNode>("Tmp-Sol-Pelouse")->setMeshMat(matVideoBkgdSM, true);
+        cigognier->findChild<SLNode>("Tmp-Souterrain")->setMeshMat(matVideoBkgd, true);
 
         // Add axis object a world origin
         SLNode* axis = new SLNode(new SLCoordAxis(s), "Axis Node");
@@ -4870,6 +5009,21 @@ resolution shadows near the camera and lower resolution shadows further away.");
         s->name("Aventicum Theatre AR");
         s->info("Augmented Reality for Aventicum Theatre");
 
+        // Create video texture on global pointer updated in AppDemoVideo
+        videoTexture = new SLGLTexture(s, texPath + "LiveVideoError.png", GL_LINEAR, GL_LINEAR);
+        videoTexture->texType(TT_videoBkgd);
+
+        // Create see through video background material without shadow mapping
+        SLMaterial* matVideoBkgd = new SLMaterial(s, "matVideoBkgd", videoTexture);
+        matVideoBkgd->lightModel(LM_Custom);
+
+        // Create see through video background material with shadow mapping
+        SLMaterial* matVideoBkgdSM = new SLMaterial(s, "matVideoBkgdSM", videoTexture);
+        matVideoBkgdSM->lightModel(LM_Custom);
+        matVideoBkgdSM->ambient(SLCol4f(0.6f, 0.6f, 0.6f));
+        matVideoBkgdSM->getsShadows(true);
+
+        // Setup the camera
         SLCamera* cam1 = new SLCamera("Camera 1");
         cam1->translation(0, 50, -150);
         cam1->lookAt(0, 0, 0);
@@ -4878,37 +5032,10 @@ resolution shadows near the camera and lower resolution shadows further away.");
         cam1->focalDist(150);
         cam1->setInitialState();
         cam1->devRotLoc(&AppDemo::devRot, &AppDemo::devLoc);
-
-        // Create video texture and turn on live video
-        videoTexture = new SLGLTexture(s, texPath + "LiveVideoError.png", GL_LINEAR, GL_LINEAR);
         cam1->background().texture(videoTexture);
+
+        // Turn on main video
         CVCapture::instance()->videoType(VT_MAIN);
-
-        // Define shader that shows on all pixels the video background
-        SLGLProgram* spVideoBackground  = new SLGLProgramGeneric(s,
-                                                                 shaderPath + "PerPixTmBackground.vert",
-                                                                 shaderPath + "PerPixTmBackground.frag");
-        SLMaterial*  matVideoBackground = new SLMaterial(s,
-                                                         "matVideoBackground",
-                                                         videoTexture,
-                                                         nullptr,
-                                                         nullptr,
-                                                         nullptr,
-                                                         spVideoBackground);
-
-        // Define shader that shows on all pixels the video background with shadow mapping
-        SLGLProgram* spVideoBackgroundSM  = new SLGLProgramGeneric(s,
-                                                                   shaderPath + "PerPixTmBackgroundSm.vert",
-                                                                   shaderPath + "PerPixTmBackgroundSm.frag");
-        SLMaterial*  matVideoBackgroundSM = new SLMaterial(s,
-                                                           "matVideoBackground",
-                                                           videoTexture,
-                                                           nullptr,
-                                                           nullptr,
-                                                           nullptr,
-                                                           spVideoBackgroundSM);
-        matVideoBackgroundSM->ambient(SLCol4f(0.6f, 0.6f, 0.6f));
-        matVideoBackgroundSM->getsShadows(true);
 
         // Create directional light for the sunlight
         SLLightDirect* sunLight = new SLLightDirect(s, s, 1.0f);
@@ -4918,7 +5045,9 @@ resolution shadows near the camera and lower resolution shadows further away.");
 
         sunLight->doSunPowerAdaptation(true);
         sunLight->createsShadows(true);
-        sunLight->createShadowMap(-80, 100, SLVec2f(130, 130), SLVec2i(4096, 4096));
+        sunLight->createShadowMapAutoSize(cam1, SLVec2i(2048, 2048), 4);
+        sunLight->shadowMap()->cascadesFactor(3.0);
+        // sunLight->createShadowMap(-80, 100, SLVec2f(130, 130), SLVec2i(4096, 4096));
         sunLight->doSmoothShadows(true);
         sunLight->castsShadows(false);
         sunLight->shadowMinBias(0.001f);
@@ -4941,9 +5070,9 @@ resolution shadows near the camera and lower resolution shadows further away.");
         theatre->rotate(-36.7f, 0, 1, 0, TS_parent);
 
         // Let the video shine through some objects
-        theatre->findChild<SLNode>("Tht-Rasen")->setMeshMat(matVideoBackgroundSM, true);
-        theatre->findChild<SLNode>("Tht-Untergrund")->setMeshMat(matVideoBackground, true);
-        theatre->findChild<SLNode>("Tht-Boden")->setMeshMat(matVideoBackgroundSM, true);
+        theatre->findChild<SLNode>("Tht-Rasen")->setMeshMat(matVideoBkgdSM, true);
+        theatre->findChild<SLNode>("Tht-Untergrund")->setMeshMat(matVideoBkgd, true);
+        theatre->findChild<SLNode>("Tht-Boden")->setMeshMat(matVideoBkgdSM, true);
         theatre->findChild<SLNode>("Tht-Boden")->setDrawBitsRec(SL_DB_WITHEDGES, true);
 
         // Add axis object a world origin
@@ -5003,45 +5132,19 @@ resolution shadows near the camera and lower resolution shadows further away.");
         s->name("Sutz, Kirchrain 18");
         s->info("Augmented Reality for Sutz, Kirchrain 18");
 
-        SLCamera* cam1 = new SLCamera("Camera 1");
-        cam1->translation(0, 50, -150);
-        cam1->lookAt(0, 0, 0);
-        cam1->clipNear(1);
-        cam1->clipFar(300);
-        cam1->focalDist(150);
-        cam1->setInitialState();
-        cam1->devRotLoc(&AppDemo::devRot, &AppDemo::devLoc);
-
-        // Create video texture and turn on live video
+        // Create video texture on global pointer updated in AppDemoVideo
         videoTexture = new SLGLTexture(s, texPath + "LiveVideoError.png", GL_LINEAR, GL_LINEAR);
-        cam1->background().texture(videoTexture);
-        CVCapture::instance()->videoType(VT_MAIN);
+        videoTexture->texType(TT_videoBkgd);
 
-        // Define shader that shows on all pixels the video background
-        SLGLProgram* spVideoBackground  = new SLGLProgramGeneric(s,
-                                                                 shaderPath + "PerPixTmBackground.vert",
-                                                                 shaderPath + "PerPixTmBackground.frag");
-        SLMaterial*  matVideoBackground = new SLMaterial(s,
-                                                         "matVideoBackground",
-                                                         videoTexture,
-                                                         nullptr,
-                                                         nullptr,
-                                                         nullptr,
-                                                         spVideoBackground);
+        // Create see through video background material without shadow mapping
+        SLMaterial* matVideoBkgd = new SLMaterial(s, "matVideoBkgd", videoTexture);
+        matVideoBkgd->lightModel(LM_Custom);
 
-        // Define shader that shows on all pixels the video background with shadow mapping
-        SLGLProgram* spVideoBackgroundSM  = new SLGLProgramGeneric(s,
-                                                                   shaderPath + "PerPixTmBackgroundSm.vert",
-                                                                   shaderPath + "PerPixTmBackgroundSm.frag");
-        SLMaterial*  matVideoBackgroundSM = new SLMaterial(s,
-                                                           "matVideoBackground",
-                                                           videoTexture,
-                                                           nullptr,
-                                                           nullptr,
-                                                           nullptr,
-                                                           spVideoBackgroundSM);
-        matVideoBackgroundSM->ambient(SLCol4f(0.6f, 0.6f, 0.6f));
-        matVideoBackgroundSM->getsShadows(true);
+        // Create see through video background material with shadow mapping
+        SLMaterial* matVideoBkgdSM = new SLMaterial(s, "matVideoBkgdSM", videoTexture);
+        matVideoBkgdSM->lightModel(LM_Custom);
+        matVideoBkgdSM->ambient(SLCol4f(0.6f, 0.6f, 0.6f));
+        matVideoBkgdSM->getsShadows(true);
 
         // Create directional light for the sunlight
         SLLightDirect* sunLight = new SLLightDirect(s, s, 5.0f);
@@ -5054,6 +5157,20 @@ resolution shadows near the camera and lower resolution shadows further away.");
         sunLight->createShadowMap(-100, 150, SLVec2f(150, 150), SLVec2i(4096, 4096));
         sunLight->doSmoothShadows(true);
         sunLight->castsShadows(false);
+
+        // Setup the camera
+        SLCamera* cam1 = new SLCamera("Camera 1");
+        cam1->translation(0, 50, -150);
+        cam1->lookAt(0, 0, 0);
+        cam1->clipNear(1);
+        cam1->clipFar(300);
+        cam1->focalDist(150);
+        cam1->setInitialState();
+        cam1->devRotLoc(&AppDemo::devRot, &AppDemo::devLoc);
+        cam1->background().texture(videoTexture);
+
+        // Turn on main video
+        CVCapture::instance()->videoType(VT_MAIN);
 
         // Let the sun be rotated by time and location
         AppDemo::devLoc.sunLightNode(sunLight);
@@ -5073,11 +5190,11 @@ resolution shadows near the camera and lower resolution shadows further away.");
         // Nothing to do here because the model is north up
 
         // Let the video shine through some objects
-        sutzK18->findChild<SLNode>("Terrain")->setMeshMat(matVideoBackgroundSM, true);
+        sutzK18->findChild<SLNode>("Terrain")->setMeshMat(matVideoBkgdSM, true);
 
         // Make buildings transparent with edges
         SLNode* buildings = sutzK18->findChild<SLNode>("Buildings");
-        buildings->setMeshMat(matVideoBackground, true);
+        buildings->setMeshMat(matVideoBkgd, true);
         buildings->setDrawBitsRec(SL_DB_WITHEDGES, true);
 
         // Add axis object a world origin
@@ -5113,135 +5230,6 @@ resolution shadows near the camera and lower resolution shadows further away.");
 
         // This loads the DEM file and overwrites the altitude of originLatLonAlt and defaultLatLonAlt
         SLstring tif = dataPath + "erleb-AR/models/sutzKirchrain18/Sutz-Kirchrain18-DEM-WGS84.tif";
-        AppDemo::devLoc.loadGeoTiff(tif);
-
-#if defined(SL_OS_MACIOS) || defined(SL_OS_ANDROID)
-        AppDemo::devLoc.isUsed(true);
-        AppDemo::devRot.isUsed(true);
-        cam1->camAnim(SLCamAnim::CA_deviceRotLocYUp);
-#else
-        AppDemo::devLoc.isUsed(false);
-        AppDemo::devRot.isUsed(false);
-        SLVec3d pos_d = AppDemo::devLoc.defaultENU() - AppDemo::devLoc.originENU();
-        SLVec3f pos_f((SLfloat)pos_d.x, (SLfloat)pos_d.y, (SLfloat)pos_d.z);
-        cam1->translation(pos_f);
-        cam1->focalDist(pos_f.length());
-        cam1->lookAt(SLVec3f::ZERO);
-        cam1->camAnim(SLCamAnim::CA_turntableYUp);
-#endif
-
-        sv->doWaitOnIdle(false); // for constant video feed
-        sv->camera(cam1);
-        s->root3D(scene);
-    }
-    else if (sceneID == SID_ErlebAREvilardCheminDuRoc2) //.........................................
-    {
-        s->name("EvilardCheminDuRoc2");
-        s->info("Augmented Reality for Evilard, Chemin du Roc 2");
-
-        SLCamera* cam1 = new SLCamera("Camera 1");
-        cam1->translation(0, 50, -150);
-        cam1->lookAt(0, 0, 0);
-        cam1->clipNear(1);
-        cam1->clipFar(300);
-        cam1->focalDist(150);
-        cam1->setInitialState();
-        cam1->devRotLoc(&AppDemo::devRot, &AppDemo::devLoc);
-
-        // Create video texture and turn on live video
-        videoTexture = new SLGLTexture(s, texPath + "LiveVideoError.png", GL_LINEAR, GL_LINEAR);
-        cam1->background().texture(videoTexture);
-        CVCapture::instance()->videoType(VT_MAIN);
-
-        // Define shader that shows on all pixels the video background
-        SLGLProgram* spVideoBackground  = new SLGLProgramGeneric(s,
-                                                                 shaderPath + "PerPixTmBackground.vert",
-                                                                 shaderPath + "PerPixTmBackground.frag");
-        SLMaterial*  matVideoBackground = new SLMaterial(s,
-                                                         "matVideoBackground",
-                                                         videoTexture,
-                                                         nullptr,
-                                                         nullptr,
-                                                         nullptr,
-                                                         spVideoBackground);
-
-        // Define shader that shows on all pixels the video background with shadow mapping
-        SLGLProgram* spVideoBackgroundSM  = new SLGLProgramGeneric(s,
-                                                                   shaderPath + "PerPixTmBackgroundSm.vert",
-                                                                   shaderPath + "PerPixTmBackgroundSm.frag");
-        SLMaterial*  matVideoBackgroundSM = new SLMaterial(s,
-                                                           "matVideoBackground",
-                                                           videoTexture,
-                                                           nullptr,
-                                                           nullptr,
-                                                           nullptr,
-                                                           spVideoBackgroundSM);
-        matVideoBackgroundSM->ambient(SLCol4f(0.6f, 0.6f, 0.6f));
-        matVideoBackgroundSM->getsShadows(true);
-
-        // Create directional light for the sunlight
-        SLLightDirect* sunLight = new SLLightDirect(s, s, 5.0f);
-        sunLight->powers(1.0f, 1.0f, 1.0f);
-        sunLight->attenuation(1, 0, 0);
-        sunLight->translation(0, 10, 0);
-        sunLight->lookAt(10, 0, 10);
-        sunLight->doSunPowerAdaptation(true);
-        sunLight->createsShadows(true);
-        sunLight->createShadowMap(-100, 150, SLVec2f(150, 150), SLVec2i(4096, 4096));
-        sunLight->doSmoothShadows(true);
-        sunLight->castsShadows(false);
-
-        // Let the sun be rotated by time and location
-        AppDemo::devLoc.sunLightNode(sunLight);
-
-        // Import main model
-        SLAssimpImporter importer;
-        SLNode*          evilardC2 = importer.load(s->animManager(),
-                                                   s,
-                                                   dataPath + "erleb-AR/models/evilardCheminDuRoc2/EvilardCheminDuRoc2.gltf",
-                                                   texPath,
-                                                   true,    // delete tex images after build
-                                                   true,    // only meshes
-                                                   nullptr, // no replacement material
-                                                   0.4f);   // 40% ambient reflection
-
-        // Rotate to the true geographic rotation
-        // Nothing to do here because the model is north up
-
-        // Let the video shine through some objects
-        evilardC2->findChild<SLNode>("Terrain")->setMeshMat(matVideoBackgroundSM, true);
-
-        // Make buildings transparent with edges
-        SLNode* buildings = evilardC2->findChild<SLNode>("Buildings");
-        buildings->setMeshMat(matVideoBackground, true);
-        buildings->setDrawBitsRec(SL_DB_WITHEDGES, true);
-
-        // Add axis object a world origin
-        SLNode* axis = new SLNode(new SLCoordAxis(s), "Axis Node");
-        axis->setDrawBitsRec(SL_DB_MESHWIRED, false);
-        axis->rotate(-90, 1, 0, 0);
-        axis->castsShadows(false);
-
-        SLNode* scene = new SLNode("Scene");
-        scene->addChild(sunLight);
-        scene->addChild(axis);
-        scene->addChild(evilardC2);
-        scene->addChild(cam1);
-
-        // initialize sensor stuff
-        // Go to https://map.geo.admin.ch and choose your origin and default point
-        AppDemo::devLoc.useOriginAltitude(false);
-        AppDemo::devLoc.originLatLonAlt(47.14818, 7.23322, 720.6f);        // Corner Chemin du Roc 7
-        AppDemo::devLoc.defaultLatLonAlt(47.14870, 7.23288, 726.0f + 1.7); // Place devant la Lisiere
-        AppDemo::devLoc.locMaxDistanceM(1000.0f);                          // Max. Distanz. zum Nullpunkt
-        AppDemo::devLoc.improveOrigin(false);                              // Keine autom. Verbesserung vom Origin
-        AppDemo::devLoc.hasOrigin(true);
-        AppDemo::devLoc.offsetMode(LOM_twoFingerY);
-        AppDemo::devRot.zeroYawAtStart(false);
-        AppDemo::devRot.offsetMode(ROM_oneFingerX);
-
-        // This loads the DEM file and overwrites the altitude of originLatLonAlt and defaultLatLonAlt
-        SLstring tif = dataPath + "erleb-AR/models/evilardCheminDuRoc2/EvilardCheminDuRoc2-DEM-WGS84.tif";
         AppDemo::devLoc.loadGeoTiff(tif);
 
 #if defined(SL_OS_MACIOS) || defined(SL_OS_ANDROID)
@@ -5926,86 +5914,7 @@ resolution shadows near the camera and lower resolution shadows further away.");
         sv->camera(cam1);
         s->root3D(scene);
     }
-    else if (sceneID == SID_Benchmark5_LOD) //.....................................................
-    {
-        SLchar name[512];
-        sprintf(name, "Lots of roman pillars as an LOD test scene");
-        s->name(name);
-        s->info(s->name());
-
-        // Create materials
-        SLMaterial* m1 = new SLMaterial(s, "m1", SLCol4f::GRAY);
-        m1->specular(SLCol4f::BLACK);
-
-        // Define a light
-        SLLightSpot* light1 = new SLLightSpot(s, s, 100, 40, 100, 1);
-        light1->powers(0.1f, 1.0f, 1.0f);
-        light1->attenuation(1, 0, 0);
-
-        // Define camera
-        SLCamera* cam1 = new SLCamera;
-        cam1->translation(0, 30, 0);
-        cam1->lookAt(0, 0, 0);
-        cam1->focalDist(cam1->translationOS().length());
-        cam1->background().colors(SLCol4f(0.1f, 0.4f, 0.8f));
-        cam1->setInitialState();
-        cam1->clipFar(1000);
-        cam1->devRotLoc(&AppDemo::devRot, &AppDemo::devLoc);
-
-        // Floor rectangle
-        SLNode* rect = new SLNode(new SLRectangle(s,
-                                                  SLVec2f(-40, -40),
-                                                  SLVec2f(40, 40),
-                                                  SLVec2f(0, 0),
-                                                  SLVec2f(50, 50),
-                                                  50,
-                                                  50,
-                                                  "Floor",
-                                                  m1));
-        rect->rotate(90, -1, 0, 0);
-        rect->castsShadows(false);
-
-        // Assemble scene
-        SLNode* scene = new SLNode("scene group");
-        scene->addChild(light1);
-        scene->addChild(rect);
-        scene->addChild(cam1);
-
-        // create loads of pillars
-        SLint   size       = 20;
-        SLint   numPillars = size * size;
-        SLfloat offset     = 4.0f;
-        SLfloat z          = (float)(size - 1) * offset * 0.5f;
-
-        for (SLint iZ = 0; iZ < size; ++iZ)
-        {
-            SLfloat x = -(float)(size - 1) * offset * 0.5f;
-
-            for (SLint iX = 0; iX < size; ++iX)
-            {
-                SLNode*    lod_0     = new SLNode(new SLCylinder(s, 1.0f, 7, 3, 32, true, true, "lod 0", m1));
-                SLNode*    lod_1     = new SLNode(new SLCylinder(s, 1.0f, 7, 3, 16, true, true, "lod 1", m1));
-                SLNode*    lod_2     = new SLNode(new SLCylinder(s, 1.0f, 7, 3, 8, true, true, "lod 2", m1));
-                SLNode*    lod_3     = new SLNode(new SLCylinder(s, 1.0f, 7, 3, 4, true, true, "lod 3", m1));
-                SLNodeLOD* lod_group = new SLNodeLOD();
-                lod_group->rotate(90, -1, 0, 0);
-                lod_group->translate(x, z, 0, TS_object);
-                lod_group->addChildLOD(lod_0, 0.1f);
-                lod_group->addChildLOD(lod_1, 0.01f);
-                lod_group->addChildLOD(lod_2, 0.001f);
-                lod_group->addChildLOD(lod_3, 0.0001f);
-                scene->addChild(lod_group);
-                x += offset;
-            }
-            z -= offset;
-        }
-
-        // Set active camera & the root pointer
-        sv->camera(cam1);
-        sv->doWaitOnIdle(false);
-        s->root3D(scene);
-    }
-    else if (sceneID == SID_Benchmark6_LOD) //.....................................................
+    else if (sceneID == SID_Benchmark5_LevelOfDetail) //...........................................
     {
         SLstring modelFile = AppDemo::configPath + "models/GLTF-CorinthianColumn/Corinthian-Column-Round-LOD.gltf";
         SLstring texCFile  = AppDemo::configPath + "models/GLTF-CorinthianColumn/PavementSlateSquare2_2K_DIF.jpg";
@@ -6014,7 +5923,7 @@ resolution shadows near the camera and lower resolution shadows further away.");
         if (Utils::fileExists(modelFile) && Utils::fileExists(texCFile) && Utils::fileExists(texNFile))
         {
             SLchar name[512];
-            sprintf(name, "Lots of Corinthian Columns in LODs");
+            sprintf(name, "Lots of corinthian columns in different levels of detail (LOD) and cascaded shadow mapping.");
             s->name(name);
             s->info(s->name());
 
@@ -6028,7 +5937,7 @@ resolution shadows near the camera and lower resolution shadows further away.");
             cam1->translation(0, 1.7f, 20);
             cam1->lookAt(0, 1.7f, 0);
             cam1->focalDist(cam1->translationOS().length());
-            cam1->clipFar(300);
+            cam1->clipFar(400);
             cam1->background().colors(SLCol4f(0.1f, 0.4f, 0.8f));
             cam1->setInitialState();
 
@@ -6039,12 +5948,14 @@ resolution shadows near the camera and lower resolution shadows further away.");
             sunLight->translation(0, 1.7f, 0);
             sunLight->lookAt(-1, 0, -1);
             sunLight->doSunPowerAdaptation(true);
+
+            // Add cascaded shadow mapping
             sunLight->createsShadows(true);
-            sunLight->createShadowMap(cam1);
+            sunLight->createShadowMapAutoSize(cam1);
             sunLight->doSmoothShadows(true);
             sunLight->castsShadows(false);
             sunLight->shadowMinBias(0.003f);
-            sunLight->shadowMaxBias(0.003f);
+            sunLight->shadowMaxBias(0.012f);
 
             // Let the sun be rotated by time and location
             AppDemo::devLoc.sunLightNode(sunLight);
@@ -6063,6 +5974,7 @@ resolution shadows near the camera and lower resolution shadows further away.");
                                                       matFloor));
             rect->rotate(90, -1, 0, 0);
             rect->castsShadows(false);
+
             // Load the corinthian column
             SLAssimpImporter importer;
             SLNode*          columnLOD = importer.load(s->animManager(),
@@ -6086,7 +5998,7 @@ resolution shadows near the camera and lower resolution shadows further away.");
             scene->addChild(cam1);
 
             // create loads of pillars
-            SLint   size       = 40;
+            SLint   size       = 50;
             SLint   numColumns = size * size;
             SLfloat offset     = 5.0f;
             SLfloat z          = (float)(size - 1) * offset * 0.5f;
@@ -6097,7 +6009,9 @@ resolution shadows near the camera and lower resolution shadows further away.");
 
                 for (SLint iX = 0; iX < size; ++iX)
                 {
-                    SLint      iZX       = iZ * size + iX;
+                    SLint iZX = iZ * size + iX;
+
+                    // With LOD parent node and 3 levels
                     string     strLOD    = "LOD" + std::to_string(iZX);
                     SLNodeLOD* lod_group = new SLNodeLOD(strLOD);
                     lod_group->translate(x, 0, z, TS_object);
@@ -6105,6 +6019,12 @@ resolution shadows near the camera and lower resolution shadows further away.");
                     lod_group->addChildLOD(new SLNode(columnL2->mesh(), strLOD + "-L1"), 0.01f, 3);
                     lod_group->addChildLOD(new SLNode(columnL3->mesh(), strLOD + "-L2"), 0.0001f, 3);
                     scene->addChild(lod_group);
+
+                    /* Without just the level 1 node
+                    string strNode = "Node" + std::to_string(iZX);
+                    SLNode* column = new SLNode(columnL1->mesh(), strNode + "-L0");
+                    column->translate(x, 0, z, TS_object);
+                    scene->addChild(column);*/
 
                     x += offset;
                 }

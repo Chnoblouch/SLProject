@@ -4,10 +4,9 @@
 //             a proxy geometry (usually a cube). The position of each vertex is
 //             copied into a output, that provides the entry position of the
 //             view ray to the according fragment shader for further calculations.
-//  Author:    Manuel Frischknecht
 //  Date:      March 2015
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Manuel Frischknecht, Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 

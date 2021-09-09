@@ -1,11 +1,10 @@
 //#############################################################################
 //  File:      sl/SLInterface.h
 //  Purpose:   Declaration of the main Scene Library C-Interface.
-//  Author:    Marcus Hudritsch
 //  Date:      July 2014
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -64,7 +63,7 @@ void         slShouldClose(bool val);
 void         slTerminate();
 void         slResize(int sceneViewIndex, int width, int height);
 bool         slUpdateParallelJob();
-bool         slPaintAllViews(float scr2fbX, float scr2fbY);
+bool         slPaintAllViews();
 
 void slMouseDown(int sceneViewIndex, SLMouseButton button, int x, int y, SLKey modifier);
 void slMouseMove(int sceneViewIndex, int x, int y);

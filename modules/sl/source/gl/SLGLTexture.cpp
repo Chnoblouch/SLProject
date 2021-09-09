@@ -1,10 +1,9 @@
 //#############################################################################
 //  File:      SLGLTexture.cpp
-//  Author:    Marcus Hudritsch
 //  Date:      July 2014
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -1778,8 +1777,9 @@ string SLGLTexture::ktxErrorStr(int ktxErrorCode)
         case KTX_UNSUPPORTED_TEXTURE_TYPE: return "KTX_UNSUPPORTED_TEXTURE_TYPE";
         case KTX_UNSUPPORTED_FEATURE: return "KTX_UNSUPPORTED_FEATURE";
         case KTX_LIBRARY_NOT_LINKED: return "KTX_LIBRARY_NOT_LINKED";
-        default: "Unknow KTX_ERROR";
+        default: "Unknown KTX_ERROR";
     }
+    return string("Unknown KTX_ERROR");
 }
 #endif
 //------------------------------------------------------------------------------

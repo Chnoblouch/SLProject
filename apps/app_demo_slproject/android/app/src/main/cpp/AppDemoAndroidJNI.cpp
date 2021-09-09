@@ -1,11 +1,10 @@
 //#############################################################################
 //  File:      AppDemoAndroidJNI.cpp
-//  Author:    Marcus Hudritsch
 //  Date:      Spring 2017
 //  Purpose:   Android Java native interface into the SLProject C++ library
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch, Zingg Pascal
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch, Zingg Pascal
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -159,7 +158,7 @@ extern "C" JNIEXPORT bool JNICALL Java_ch_bfh_cpvrlab_GLES3Lib_onUpdateParallelJ
 //-----------------------------------------------------------------------------
 extern "C" JNIEXPORT bool JNICALL Java_ch_bfh_cpvrlab_GLES3Lib_onPaintAllViews(JNIEnv* env, jclass obj)
 {
-    return slPaintAllViews(1.0f, 1.0f);
+    return slPaintAllViews();
 }
 //-----------------------------------------------------------------------------
 extern "C" JNIEXPORT void JNICALL Java_ch_bfh_cpvrlab_GLES3Lib_onResize(JNIEnv* env, jclass obj, jint width, jint height)

@@ -1,11 +1,10 @@
 //#############################################################################
 //  File:      AppNodeMainGLFW.cpp
 //  Purpose:   Implementation of the GUI with the GLFW3 (http://www.glfw.org/)
-//  Author:    Marcus Hudritsch
 //  Date:      July 2014
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -63,21 +62,10 @@ SLbool onPaint()
         return false;
     SLSceneView* sv = AppDemo::sceneViews[svIndex];
 
-    // Calculate screen to framebuffer ratio for high-DPI monitors
-    /* This ratio can be different per monitor. We can not retrieve the
-       correct framebuffer size until the first paint event is done. So
-       we have to do it in here on every frame because we can move the window
-       to another monitor. */
-    int fbWidth = 0, fbHeight = 0, wndWidth = 0, wndHeight = 0;
-    glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
-    glfwGetWindowSize(window, &wndWidth, &wndHeight);
-    float scr2fbX = (float)fbWidth / (float)wndWidth;
-    float scr2fbY = (float)fbHeight / (float)wndHeight;
-
-    ///////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////
     bool jobIsRunning      = slUpdateParallelJob();
-    bool viewsNeedsRepaint = slPaintAllViews(scr2fbX, scr2fbY);
-    ///////////////////////////////////////////////////////////
+    bool viewsNeedsRepaint = slPaintAllViews();
+    ///////////////////////////////////////////////
 
     return jobIsRunning || viewsNeedsRepaint;
 }
@@ -426,6 +414,7 @@ void initGLFW(int screenWidth, int screenHeight)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GL_FALSE);
 #endif
 
     window = glfwCreateWindow(screenWidth, screenHeight, "My Title", nullptr, nullptr);

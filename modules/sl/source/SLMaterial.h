@@ -1,10 +1,9 @@
 //#############################################################################
 //  File:      SLMaterial.h
-//  Author:    Marcus Hudritsch
 //  Date:      July 2014
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -17,6 +16,7 @@
 #include <SLGLTexture.h>
 #include <SLNode.h>
 
+class SLSkybox;
 class SLSceneView;
 class SLAssetManager;
 
@@ -71,6 +71,14 @@ public:
                SLfloat         metalness,
                const SLstring& compileErrorTexFilePath = "");
  
+    //! Ctor for Cook-Torrance light model materials
+    SLMaterial(SLAssetManager* am,
+               const SLchar*   name,
+               const SLCol4f&  diffuse,
+               SLfloat         roughness,
+               SLfloat         metalness,
+               const SLstring& compileErrorTexFilePath = "");
+
     //! Ctor for Cook-Torrance light model materials
     SLMaterial(SLAssetManager* am,
                const SLchar*   name,
@@ -140,7 +148,9 @@ public:
 
     ~SLMaterial() override;
 
-    void activate(SLCamera* cam, SLVLight* lights);
+    void activate(SLCamera* cam,
+                  SLVLight* lights,
+                  SLSkybox* skybox = nullptr);
     void passToUniforms(SLGLProgram* program);
 
     //! Returns true if there is any transparency in diffuse alpha or textures
@@ -148,7 +158,6 @@ public:
     {
         if (_diffuse.a < 1.0)
             return true;
-        
         for (int i = 0; i < _textures[TT_diffuse].size(); i++)
         {
             if (_textures[TT_diffuse][i]->hasAlpha())
@@ -173,6 +182,7 @@ public:
     }
     void removeTextureType(SLTextureType tt)
     {
+        _numTextures -= _textures[tt].size();
         _textures[tt].clear();
     }
     void addTexture(SLGLTexture* texture);
@@ -231,16 +241,17 @@ public:
     SLfloat         kt() const { return _kt; }
     SLfloat         kn() const { return _kn; }
     SLbool          getsShadows() const { return _getsShadows; }
-    SLuint          nbTextures() { return _nbTextures; }
+    SLuint          numTextures() { return _numTextures; }
     SLGLProgram*    program() { return _program; }
     SLVNode&        nodesVisible2D() { return _nodesVisible2D; }
     SLVNode&        nodesVisible3D() { return _nodesVisible3D; }
 
-    SLVGLTexture&   textures(SLTextureType type) { return _textures[type]; }
-    SLVGLTexture&   textures3d() { return _textures3d; }
-    
+    SLVGLTexture& textures(SLTextureType type) { return _textures[type]; }
+    SLVGLTexture& textures3d() { return _textures3d; }
+
     // Setters
     void assetManager(SLAssetManager* am) { _assetManager = am; }
+    void lightModel(SLLightModel lm) { _lightModel = lm; }
 
     // Static variables & functions
     static SLfloat K;       //!< PM: Constant of gloss calibration (slope of point light at dist 1)
@@ -263,12 +274,12 @@ protected:
     SLfloat         _kn{};         //!< refraction index
     SLbool          _getsShadows;  //!< true if shadows are visible on this material
     SLGLProgram*    _program{};    //!< pointer to a GLSL shader program
-    SLint           _nbTextures;
+    SLint           _numTextures;  //!< Number of textures in all _textures vectors array
 
-    SLVGLTexture    _textures[TT_nbTextureType];
-    SLVGLTexture    _textures3d;
-    SLGLTexture* _errorTexture = nullptr; //!< pointer to error texture that is shown if another texture fails
-    SLstring     _compileErrorTexFilePath;
+    SLVGLTexture _textures[TT_numTextureType]; //!< Array of texture vectors one for each type
+    SLVGLTexture _textures3d;                  //!< Texture vector for diffuse 3D textures
+    SLGLTexture* _errorTexture = nullptr;      //!< Pointer to error texture that is shown if another texture fails
+    SLstring     _compileErrorTexFilePath;     //!< Path to the error texture
 
     SLVNode _nodesVisible2D; //!< Vector of all visible 2D nodes of with this material
     SLVNode _nodesVisible3D; //!< Vector of all visible 3D nodes of with this material

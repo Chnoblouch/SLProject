@@ -1,9 +1,8 @@
 //#############################################################################
 //  File:      SLRaytracer.cpp
-//  Author:    Marcus Hudritsch
 //  Date:      July 2014
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -14,6 +13,7 @@ using namespace std::placeholders;
 #include <SLRay.h>
 #include <SLRaytracer.h>
 #include <SLSceneView.h>
+#include <SLSkybox.h>
 #include <GlobalTimer.h>
 #include <Instrumentor.h>
 
@@ -48,8 +48,8 @@ SLRaytracer::~SLRaytracer()
 }
 //-----------------------------------------------------------------------------
 /*!
-This is the main rendering method for the classic ray tracing. It loops over all 
-lines and pixels and determines for each pixel a color with a partly global 
+This is the main rendering method for the classic ray tracing. It loops over all
+lines and pixels and determines for each pixel a color with a partly global
 illumination calculation.
 */
 SLbool SLRaytracer::renderClassic(SLSceneView* sv)
@@ -312,8 +312,8 @@ void SLRaytracer::renderSlicesMS(const bool isMainThread)
                         lensToFP.normalize();
 
                         SLCol4f backColor;
-                        if (_sv->skybox())
-                            backColor = _sv->skybox()->colorAtDir(lensToFP);
+                        if (_sv->s()->skybox())
+                            backColor = _sv->s()->skybox()->colorAtDir(lensToFP);
                         else
                             backColor = _sv->camera()->background().colorAtPos((SLfloat)x,
                                                                                (SLfloat)y,
@@ -454,8 +454,8 @@ void SLRaytracer::setPrimaryRay(SLfloat x, SLfloat y, SLRay* primaryRay)
         primaryRay->origin = _EYE;
     }
 
-    if (_sv->skybox())
-        primaryRay->backgroundColor = _sv->skybox()->colorAtDir(primaryRay->dir);
+    if (_sv->s()->skybox())
+        primaryRay->backgroundColor = _sv->s()->skybox()->colorAtDir(primaryRay->dir);
     else
         primaryRay->backgroundColor = _sv->camera()->background().colorAtPos(x,
                                                                              y,
@@ -465,12 +465,12 @@ void SLRaytracer::setPrimaryRay(SLfloat x, SLfloat y, SLRay* primaryRay)
 }
 //-----------------------------------------------------------------------------
 /*!
-This method calculates the local illumination at the rays intersection point. 
-It uses the OpenGL local light model where the color is calculated as 
+This method calculates the local illumination at the rays intersection point.
+It uses the OpenGL local light model where the color is calculated as
 follows:
-color = material emission + 
-        global ambient light scaled by the material's ambient color + 
-        ambient, diffuse, and specular contributions from all lights, 
+color = material emission +
+        global ambient light scaled by the material's ambient color +
+        ambient, diffuse, and specular contributions from all lights,
         properly attenuated
 */
 SLCol4f SLRaytracer::shade(SLRay* ray)
@@ -644,7 +644,7 @@ void SLRaytracer::sampleAAPixels(const bool isMainThread)
     PROFILE_FUNCTION();
 
     assert(_aaSamples % 2 == 1 && "subSample: maskSize must be uneven");
-    double t1 = 0, t2 = 0;
+    double t1 = 0, t2;
 
     while (_nextLine < (SLint)_aaPixels.size())
     {
@@ -663,12 +663,14 @@ void SLRaytracer::sampleAAPixels(const bool isMainThread)
             SLCol4f centerColor(c4f[0], c4f[1], c4f[2], c4f[3]);
             SLint   centerIndex = _aaSamples >> 1;
             SLfloat f           = 1.0f / (SLfloat)_aaSamples;
-            SLfloat xpos        = x - centerIndex * f;
-            SLfloat ypos        = y - centerIndex * f;
-            SLfloat samples     = (SLfloat)_aaSamples * _aaSamples;
+            SLfloat xpos        = (SLfloat)x - (SLfloat)centerIndex * f;
+            SLfloat ypos        = (SLfloat)y - (SLfloat)centerIndex * f;
+            SLfloat samples     = (SLfloat)_aaSamples * (SLfloat)_aaSamples;
             SLCol4f color(0, 0, 0);
 
             // Loop regularly over the float pixel
+
+
             for (SLint sy = 0; sy < _aaSamples; ++sy)
             {
                 for (SLint sx = 0; sx < _aaSamples; ++sx)
@@ -713,8 +715,8 @@ void SLRaytracer::sampleAAPixels(const bool isMainThread)
     }
 }
 //-----------------------------------------------------------------------------
-/*! 
-fogBlend: Blends the a fog color to the passed color according to to OpenGL fog 
+/*!
+fogBlend: Blends the a fog color to the passed color according to to OpenGL fog
 calculation. See OpenGL docs for more information on fog properties.
 */
 SLCol4f SLRaytracer::fogBlend(SLfloat z, SLCol4f color)
@@ -761,7 +763,7 @@ void SLRaytracer::initStats(SLint depth)
     SLRay::avgDepth         = 0.0f;
 }
 //-----------------------------------------------------------------------------
-/*! 
+/*!
 Prints some statistics after the rendering
 */
 void SLRaytracer::printStats(SLfloat sec)
@@ -825,7 +827,7 @@ void SLRaytracer::prepareImage()
         SLfloat hw = hh * _sv->viewportWdivH();
 
         // calculate the size of a pixel in world coords.
-        _pxSize = hw * 2 / ((SLint)(_sv->viewportW() * _resolutionFactor));
+        _pxSize = hw * 2 / ((SLint)((SLfloat)_sv->viewportW() * _resolutionFactor));
 
         _BL = _EYE - hw * _LR - hh * _LU + _pxSize / 2 * _LR - _pxSize / 2 * _LU;
     }
@@ -842,7 +844,7 @@ void SLRaytracer::prepareImage()
         SLfloat hw = hh * _sv->viewportWdivH();
 
         // calculate the size of a pixel in world coords.
-        _pxSize = hw * 2 / ((SLint)(_sv->viewportW() * _resolutionFactor));
+        _pxSize = hw * 2 / ((SLint)((SLfloat)_sv->viewportW() * _resolutionFactor));
 
         // calculate a vector to the center (C) of the bottom left (BL) pixel
         SLVec3f C = _LA * _cam->focalDist();
@@ -851,14 +853,14 @@ void SLRaytracer::prepareImage()
 
     // Create the image for the first time
     if (_images.empty())
-        _images.push_back(new CVImage((SLint)(_sv->viewportW() * _resolutionFactor),
-                                      (SLint)(_sv->viewportH() * _resolutionFactor),
+        _images.push_back(new CVImage((SLint)((SLfloat)_sv->viewportW() * _resolutionFactor),
+                                      (SLint)((SLfloat)_sv->viewportH() * _resolutionFactor),
                                       PF_rgb,
                                       "Raytracer"));
 
     // Allocate image of the inherited texture class
-    if ((SLint)(_sv->viewportW() * _resolutionFactor) != (SLint)_images[0]->width() ||
-        (SLint)(_sv->viewportH() * _resolutionFactor) != (SLint)_images[0]->height())
+    if ((SLint)((SLfloat)_sv->viewportW() * _resolutionFactor) != (SLint)_images[0]->width() ||
+        (SLint)((SLfloat)_sv->viewportH() * _resolutionFactor) != (SLint)_images[0]->height())
     {
         // Delete the OpenGL Texture if it already exists
         if (_texID)
@@ -868,20 +870,20 @@ void SLRaytracer::prepareImage()
         }
 
         _vaoSprite.clearAttribs();
-        _images[0]->allocate((SLint)(_sv->viewportW() * _resolutionFactor),
-                             (SLint)(_sv->viewportH() * _resolutionFactor),
+        _images[0]->allocate((SLint)((SLfloat)_sv->viewportW() * _resolutionFactor),
+                             (SLint)((SLfloat)_sv->viewportH() * _resolutionFactor),
                              PF_rgb);
 
-        _width = _images[0]->width();
-        _height = _images[0]->height();
-        _depth = _images.size();
+        _width  = (SLint)_images[0]->width();
+        _height = (SLint)_images[0]->height();
+        _depth  = (SLint)_images.size();
     }
 
     // Fill image black for single RT
     if (!_doContinuous) _images[0]->fill(0, 0, 0);
 }
 //-----------------------------------------------------------------------------
-/*! 
+/*!
 Draw the RT-Image as a textured quad in 2D-Orthographic projection
 */
 void SLRaytracer::renderImage(bool updateTextureGL)
@@ -894,10 +896,7 @@ void SLRaytracer::renderImage(bool updateTextureGL)
 
     // Set orthographic projection with the size of the window
     SLGLState* stateGL = SLGLState::instance();
-    stateGL->viewportFB((SLint)(vpRect.x * _sv->scr2fbX()),
-                      (SLint)(vpRect.y * _sv->scr2fbX()),
-                      (SLsizei)(w * _sv->scr2fbX()),
-                      (SLsizei)(h * _sv->scr2fbY()));
+    stateGL->viewport(vpRect.x, vpRect.y, (SLsizei)w, (SLsizei)h);
     stateGL->projectionMatrix.ortho(0.0f, w, 0.0f, h, -1.0f, 0.0f);
     stateGL->modelViewMatrix.identity();
     stateGL->clearColorBuffer();

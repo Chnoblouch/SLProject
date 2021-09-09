@@ -1,10 +1,9 @@
 //#############################################################################
 //  File:      SLAABBox.cpp
-//  Author:    Marcus Hudritsch
 //  Date:      July 2014
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -405,7 +404,7 @@ void SLAABBox::mergeWS(SLAABBox& bb)
 }
 //-----------------------------------------------------------------------------
 //! Calculates the AABBs min. and max. corners in screen space
-void SLAABBox::calculateRectSS(SLfloat scr2fbX, SLfloat scr2fbY)
+void SLAABBox::calculateRectSS()
 {
     SLVec3f corners[8];
 
@@ -423,7 +422,7 @@ void SLAABBox::calculateRectSS(SLfloat scr2fbX, SLfloat scr2fbY)
 
     // build view-projection-viewport matrix
     SLGLState* stateGL = SLGLState::instance();
-    SLMat4f    vpvpMat = stateGL->viewportMatrixFB() *
+    SLMat4f    vpvpMat = stateGL->viewportMatrix() *
                       stateGL->projectionMatrix *
                       stateGL->viewMatrix;
 
@@ -443,25 +442,19 @@ void SLAABBox::calculateRectSS(SLfloat scr2fbX, SLfloat scr2fbY)
         maxSS.y = std::max(maxSS.y, corners[i].y);
     }
 
-    // Correct the screen to framebuffer factor
-    minSS.x /= scr2fbX;
-    minSS.y /= scr2fbY;
-    maxSS.x /= scr2fbX;
-    maxSS.y /= scr2fbX;
-
     _rectSS.set(minSS.x, minSS.y, maxSS.x - minSS.x, maxSS.y - minSS.y);
     //_rectSS.print("_rectSS: ");
 }
 //-----------------------------------------------------------------------------
-//! Calculates the bounding rectangle in screen space and returns covarage in SS
-SLfloat SLAABBox::rectCoverageInSS(SLfloat scr2fbX, SLfloat scr2fbY)
+//! Calculates the bounding rectangle in screen space and returns coverage in SS
+SLfloat SLAABBox::rectCoverageInSS()
 {
-    calculateRectSS(scr2fbX, scr2fbY);
+    calculateRectSS();
 
     SLGLState* stateGL        = SLGLState::instance();
     SLfloat    areaSS         = _rectSS.width * _rectSS.height;
-    SLVec4i    vp             = stateGL->viewportFB();
-    SLfloat    areaFullScreen = (float)vp.z / scr2fbX * (float)vp.w / scr2fbY;
+    SLVec4i    vp             = stateGL->viewport();
+    SLfloat    areaFullScreen = (float)vp.z * (float)vp.w;
     SLfloat    coverage       = areaSS / areaFullScreen;
     return coverage;
 }

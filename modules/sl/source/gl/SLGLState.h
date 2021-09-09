@@ -1,11 +1,10 @@
 //#############################################################################
 //  File:      SLGLState.h
 //  Purpose:   Singleton class for global render state
-//  Author:    Marcus Hudritsch
 //  Date:      July 2014
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -20,10 +19,10 @@
 #elif defined(SL_OS_MACOS)
 #    include <GL/gl3w.h>
 #elif defined(SL_OS_ANDROID)
-//https://stackoverflow.com/questions/31003863/gles-3-0-including-gl2ext-h
+// https://stackoverflow.com/questions/31003863/gles-3-0-including-gl2ext-h
 #    include <GLES3/gl3.h>
 #    include <GLES2/gl2ext.h>
-#    ifndef GL_CLAMP_TO_BORDER //see #define GL_CLAMP_TO_BORDER_OES 0x812D in gl2ext.h
+#    ifndef GL_CLAMP_TO_BORDER // see #define GL_CLAMP_TO_BORDER_OES 0x812D in gl2ext.h
 #        define GL_CLAMP_TO_BORDER GL_CLAMP_TO_BORDER_OES
 #    endif
 //#    include <GLES3/gl31.h>
@@ -119,7 +118,7 @@ public:
     void polygonOffsetPoint(SLbool enabled, SLfloat factor = -1.0f, SLfloat units = -1.0f);
     void polygonOffsetLine(SLbool enabled, SLfloat factor = -1.0f, SLfloat units = -1.0f);
     void polygonOffsetFill(SLbool enabled, SLfloat factor = -1.0f, SLfloat units = -1.0f);
-    void viewportFB(SLint x, SLint y, SLsizei w, SLsizei h);
+    void viewport(SLint x, SLint y, SLsizei width, SLsizei height);
     void colorMask(GLboolean r, GLboolean g, GLboolean b, GLboolean a);
     void useProgram(SLuint progID);
     void bindTexture(SLenum target, SLuint textureID);
@@ -142,14 +141,14 @@ public:
     SLbool   glIsES2() const { return _glIsES2; }
     SLbool   glIsES3() const { return _glIsES3; }
     SLbool   hasExtension(const SLstring& e) { return _glExtensions.find(e) != string::npos; }
-    SLVec4i  viewportFB() { return _viewportFB; }
-    SLMat4f  viewportMatrixFB()
+    SLVec4i  viewport() { return _viewport; }
+    SLMat4f  viewportMatrix()
     {
         SLMat4f vpm;
-        vpm.viewport((SLfloat)_viewportFB.x,
-                     (SLfloat)_viewportFB.y,
-                     (SLfloat)_viewportFB.z,
-                     (SLfloat)_viewportFB.w);
+        vpm.viewport((SLfloat)_viewport.x,
+                     (SLfloat)_viewport.y,
+                     (SLfloat)_viewport.z,
+                     (SLfloat)_viewport.w);
         return vpm;
     }
     SLMaterial* currentMaterial() { return _currentMaterial; }
@@ -205,7 +204,7 @@ private:
     SLbool  _polygonOffsetPointEnabled; //!< GL_POLYGON_OFFSET_POINT state enabled
     SLbool  _polygonOffsetLineEnabled;  //!< GL_POLYGON_OFFSET_LINE state enabled
     SLbool  _polygonOffsetFillEnabled;  //!< GL_POLYGON_OFFSET_FILL state enabled
-    SLVec4i _viewportFB;                //!< viewport size (x,y,w,h) of the framebuffer
+    SLVec4i _viewport;                  //!< viewport size (x,y,w,h) of the framebuffer
     SLCol4f _clearColor;                //!< clear color
 
     // states

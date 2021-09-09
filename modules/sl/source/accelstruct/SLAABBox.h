@@ -1,10 +1,9 @@
 //#############################################################################
 //  File:      SLAABBox.h
-//  Author:    Marcus Hudritsch
 //  Date:      July 2014
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -78,8 +77,8 @@ public:
     void    generateVAO();
     SLbool  isHitInOS(SLRay* ray);
     SLbool  isHitInWS(SLRay* ray);
-    void    calculateRectSS(SLfloat scr2fbX, SLfloat scr2fbY);
-    SLfloat rectCoverageInSS(SLfloat scr2fbX, SLfloat scr2fbY);
+    void    calculateRectSS();
+    SLfloat rectCoverageInSS();
 
 private:
     SLVec3f            _minWS;        //!< Min. corner in world space

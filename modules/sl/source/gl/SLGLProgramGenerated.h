@@ -1,11 +1,11 @@
 //#############################################################################
 //  File:      SLGLProgramGenerated.h
-//  Author:    Marcus Hudritsch
+//  Authors:   Marcus Hudritsch
 //  Purpose:   Defines a generated shader program that just starts and stops the
 //             shaders that are hold in the base class SLGLProgram.
 //  Date:      December 2020
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/Coding-Style-Guidelines
-//             This software is provide under the GNU General Public License
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -105,14 +105,34 @@ private:
     void buildPerPixBlinnTm(SLVLight* lights);
     void buildPerPixBlinn(SLVLight* lights);
 
-    void buildPerPixCookTorrance(SLVLight* lights, bool ev, bool sm, bool tm, bool nm, bool ao);
+    void buildPerPixCook(SLVLight* lights, bool ev, bool sm, bool tm, bool nm, bool ao);
 
     // Helpers
+    /*
+    void buildPerPixCookTmNmAoSm(SLVLight* lights, bool ev);
+    void buildPerPixCookTmNmAo(SLVLight* lights, bool ev);
+    void buildPerPixCookTmNmSm(SLVLight* lights, bool ev);
+    void buildPerPixCookTmAoSm(SLVLight* lights, bool ev);
+    void buildPerPixCookAoSm(SLVLight* lights, bool ev);
+    void buildPerPixCookNmSm(SLVLight* lights, bool ev);
+    void buildPerPixCookTmSm(SLVLight* lights, bool ev);
+    void buildPerPixCookTmAo(SLVLight* lights, bool ev);
+    void buildPerPixCookTmNm(SLVLight* lights, bool ev);
+    void buildPerPixCookSm(SLVLight* lights, bool ev);
+    void buildPerPixCookAo(SLVLight* lights, bool ev);
+    void buildPerPixCookTm(SLVLight* lights, bool ev);
+    void buildPerPixCookNm(SLVLight* lights, bool ev);
+    void buildPerPixCook(SLVLight* lights, bool ev);
+    */
 
-    static string coloredShadows();
+    // Video background shader builder functions
+    void buildPerPixVideoBkgdSm(SLVLight* lights);
+    void buildPerPixVideoBkgd(SLVLight* lights);
+
+    // Helpers
     static string fragInputs_u_lightSm(SLVLight* lights);
     static string fragInputs_u_shadowMaps(SLVLight* lights);
-    static string fragShadowTest(SLVLight* lights);
+    static string fragFunctionShadowTest(SLVLight* lights);
     static string shaderHeader(int numLights);
     static void   addCodeToShader(SLGLShader*   shader,
                                   const string& code,

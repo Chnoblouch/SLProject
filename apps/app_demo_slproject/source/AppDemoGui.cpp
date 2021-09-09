@@ -1,11 +1,10 @@
 //#############################################################################
 //  File:      AppDemoGui.cpp
 //  Purpose:   UI with the ImGUI framework fully rendered in OpenGL 3+
-//  Author:    Marcus Hudritsch
 //  Date:      Summer 2017
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -137,7 +136,7 @@ For more information please visit: https://github.com/cpvrlab/SLProject
 
 SLstring AppDemoGui::infoCredits = R"(
 Contributors since 2005 in alphabetic order:
-Martin Christen, Jan Dellsperger, Manuel Frischknecht, Luc Girod, Michael Goettlicher, Michael Schertenleib, Stefan Thoeni, Timo Tschanz, Marc Wacker, Pascal Zingg
+Martin Christen, Jan Dellsperger, Manuel Frischknecht, Luc Girod, Michael Goettlicher, Michael Schertenleib, Thomas Schneiter, Stefan Thoeni, Timo Tschanz, Marc Wacker, Pascal Zingg
 
 Credits for external libraries:
 - assimp: assimp.sourceforge.net
@@ -247,10 +246,10 @@ void AppDemoGui::build(SLProjectScene* s, SLSceneView* sv)
             }
 
             ImGui::Separator();
-            ImGui::Text("Parallel Jobs to follow: %lu",
-                        AppDemo::jobsToBeThreaded.size());
-            ImGui::Text("Sequential Jobs to follow: %lu",
-                        AppDemo::jobsToFollowInMain.size());
+            ImGui::Text("Parallel Jobs to follow: %u",
+                        (uint)AppDemo::jobsToBeThreaded.size());
+            ImGui::Text("Sequential Jobs to follow: %u",
+                        (uint)AppDemo::jobsToFollowInMain.size());
             ImGui::End();
             return;
         }
@@ -268,8 +267,8 @@ void AppDemoGui::build(SLProjectScene* s, SLSceneView* sv)
                 if (opt_fullscreen)
                 {
                     ImGuiViewport* viewport = ImGui::GetMainViewport();
-                    ImGui::SetNextWindowPos(viewport->GetWorkPos());
-                    ImGui::SetNextWindowSize(viewport->GetWorkSize());
+                    ImGui::SetNextWindowPos(viewport->WorkPos);
+                    ImGui::SetNextWindowSize(viewport->WorkSize);
                     ImGui::SetNextWindowViewport(viewport->ID);
                     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
                     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
@@ -403,8 +402,9 @@ void AppDemoGui::build(SLProjectScene* s, SLSceneView* sv)
                     sprintf(m + strlen(m), "Renderer   : OpenGL\n");
                     sprintf(m + strlen(m), "Load time  : %5.1f ms\n", s->loadTimeMS());
                     sprintf(m + strlen(m), "Window size: %d x %d\n", sv->viewportW(), sv->viewportH());
-                    sprintf(m + strlen(m), "Framebuffer: %d x %d\n", (int)(sv->viewportW() * sv->scr2fbY()), (int)(sv->viewportH() * sv->scr2fbX()));
                     sprintf(m + strlen(m), "Drawcalls  : %d\n", SLGLVertexArray::totalDrawCalls);
+                    sprintf(m + strlen(m), " Shadow    : %d\n", SLShadowMap::drawCalls);
+                    sprintf(m + strlen(m), " Render    : %d\n", SLGLVertexArray::totalDrawCalls - SLShadowMap::drawCalls);
                     sprintf(m + strlen(m), "Primitives : %d\n", SLGLVertexArray::totalPrimitivesRendered);
                     sprintf(m + strlen(m), "FPS        : %5.1f\n", s->fps());
                     sprintf(m + strlen(m), "Frame time : %5.1f ms (100%%)\n", ft);
@@ -1140,14 +1140,14 @@ void AppDemoGui::build(SLProjectScene* s, SLSceneView* sv)
                                                              adjustedTime);
                     }
 
-                    SLchar strTime[100];
+                    SLchar      strTime[100];
                     std::time_t now = std::time(nullptr);
-                    tm tnow{};
+                    tm          tnow{};
                     memcpy(&tnow, std::localtime(&now), sizeof(tm));
-                    sprintf(strTime, "Set now (%02d.%02d.%02d %02d:%02d)", tnow.tm_mday, tnow.tm_mon+1, tnow.tm_year + 1900, tnow.tm_hour, tnow.tm_min);
+                    sprintf(strTime, "Set now (%02d.%02d.%02d %02d:%02d)", tnow.tm_mday, tnow.tm_mon + 1, tnow.tm_year + 1900, tnow.tm_hour, tnow.tm_min);
                     if (ImGui::MenuItem(strTime))
                     {
-                        adjustedTime    = 0;
+                        adjustedTime = 0;
                         memcpy(&lt, std::localtime(&now), sizeof(tm));
                         AppDemo::devLoc.calculateSolarAngles(AppDemo::devLoc.originLatLonAlt(), now);
                     }
@@ -1210,7 +1210,7 @@ void AppDemoGui::build(SLProjectScene* s, SLSceneView* sv)
                 SLint   namedLocIndex = AppDemo::devLoc.activeNamedLocation();
                 SLVec3f lookAtPoint   = SLVec3f::ZERO;
 
-                if (AppDemo::sceneID == SID_ErlebARChristoffel)
+                if (AppDemo::sceneID == SID_ErlebARBernChristoffel)
                 {
                     ImGui::Begin("Christoffel",
                                  &showErlebAR,
@@ -1518,8 +1518,10 @@ void AppDemoGui::buildMenuBar(SLProjectScene* s, SLSceneView* sv)
                         s->onLoad(s, sv, SID_ShadowMappingPointLights);
                     if (ImGui::MenuItem("RT Soft Shadows", nullptr, sid == SID_RTSoftShadows))
                         s->onLoad(s, sv, SID_RTSoftShadows);
-                    if (ImGui::MenuItem("Cascaded Shadow Map", nullptr, sid == SID_ShadowMappingCascaded))
+                    if (ImGui::MenuItem("Cascaded Shadows", nullptr, sid == SID_ShadowMappingCascaded))
                         s->onLoad(s, sv, SID_ShadowMappingCascaded);
+                    if (ImGui::MenuItem("Cascaded Shadows with LOD", nullptr, sid == SID_Benchmark5_LevelOfDetail))
+                        s->onLoad(s, sv, SID_Benchmark5_LevelOfDetail);
 
                     ImGui::EndMenu();
                 }
@@ -1780,13 +1782,11 @@ void AppDemoGui::buildMenuBar(SLProjectScene* s, SLSceneView* sv)
                         s->onLoad(s, sv, SID_Benchmark3_NodeAnimations);
                     if (ImGui::MenuItem("Massive Skinned Animations", nullptr, sid == SID_Benchmark4_SkinnedAnimations))
                         s->onLoad(s, sv, SID_Benchmark4_SkinnedAnimations);
-                    if (ImGui::MenuItem("Level of Detail", nullptr, sid == SID_Benchmark5_LOD))
-                        s->onLoad(s, sv, SID_Benchmark5_LOD);
-                    if (ImGui::MenuItem("Corinthian Columns (LOD)", nullptr, sid == SID_Benchmark6_LOD))
+                    if (ImGui::MenuItem("Level of Detail (LOD)", nullptr, sid == SID_Benchmark5_LevelOfDetail))
                     {
                         SLstring largeFile = AppDemo::configPath + "models/GLTF-CorinthianColumn/Corinthian-Column-Round-LOD.gltf";
                         if (Utils::fileExists(largeFile))
-                            s->onLoad(s, sv, SID_Benchmark6_LOD);
+                            s->onLoad(s, sv, SID_Benchmark5_LevelOfDetail);
                         else
                         {
                             downloadModelAndLoadScene(s,
@@ -1795,7 +1795,7 @@ void AppDemoGui::buildMenuBar(SLProjectScene* s, SLSceneView* sv)
                                                       "https://pallas.ti.bfh.ch/data/SLProject/models/",
                                                       AppDemo::configPath + "models/",
                                                       "GLTF-CorinthianColumn/Corinthian-Column-Round-LOD.gltf",
-                                                      SID_Benchmark6_LOD);
+                                                      SID_Benchmark5_LevelOfDetail);
                         }
                     }
 
@@ -1825,8 +1825,8 @@ void AppDemoGui::buildMenuBar(SLProjectScene* s, SLSceneView* sv)
                     if (ImGui::BeginMenu("Erleb-AR"))
                     {
                         if (Utils::fileExists(modelBR2))
-                            if (ImGui::MenuItem("Bern: Christoffel Tower", nullptr, sid == SID_ErlebARChristoffel))
-                                s->onLoad(s, sv, SID_ErlebARChristoffel);
+                            if (ImGui::MenuItem("Bern: Christoffel Tower", nullptr, sid == SID_ErlebARBernChristoffel))
+                                s->onLoad(s, sv, SID_ErlebARBernChristoffel);
 
                         if (Utils::fileExists(modelBFH))
                             if (ImGui::MenuItem("Biel: BFH", nullptr, sid == SID_ErlebARBielBFH))
@@ -1860,10 +1860,6 @@ void AppDemoGui::buildMenuBar(SLProjectScene* s, SLSceneView* sv)
                             if (ImGui::MenuItem("Sutz: Kirchrain 18", nullptr, sid == SID_ErlebARSutzKirchrain18))
                                 s->onLoad(s, sv, SID_ErlebARSutzKirchrain18);
 
-                        if (Utils::fileExists(modelEV1))
-                            if (ImGui::MenuItem("Evilard: Chemin du Roc 2", nullptr, sid == SID_ErlebAREvilardCheminDuRoc2))
-                                s->onLoad(s, sv, SID_ErlebAREvilardCheminDuRoc2);
-
                         ImGui::EndMenu();
                     }
                 }
@@ -1875,13 +1871,13 @@ void AppDemoGui::buildMenuBar(SLProjectScene* s, SLSceneView* sv)
                 s->onLoad(s, sv, SID_Empty);
 
             if (ImGui::MenuItem("Next Scene",
-                                "Shift-Alt-CursorRight",
+                                "Shift-Alt-Right",
                                 nullptr,
                                 AppDemo::sceneID < SID_Maximal - 1))
                 s->onLoad(s, sv, AppDemo::sceneID + 1);
 
             if (ImGui::MenuItem("Previous Scene",
-                                "Shift-Alt-CursorLeft",
+                                "Shift-Alt-Left",
                                 nullptr,
                                 AppDemo::sceneID > SID_Empty))
                 s->onLoad(s, sv, AppDemo::sceneID - 1);
@@ -2874,7 +2870,7 @@ void AppDemoGui::buildMenuBar(SLProjectScene* s, SLSceneView* sv)
             ImGui::MenuItem("Infos on Device", nullptr, &showInfosDevice);
             ImGui::MenuItem("Infos on Sensors", nullptr, &showInfosSensors);
             if (AppDemo::sceneID >= SID_ErlebARBielBFH &&
-                AppDemo::sceneID <= SID_ErlebAREvilardCheminDuRoc2)
+                AppDemo::sceneID <= SID_ErlebARSutzKirchrain18)
             {
                 ImGui::Separator();
                 ImGui::MenuItem("ErlebAR Settings", nullptr, &showErlebAR);
@@ -3224,8 +3220,8 @@ void AppDemoGui::buildProperties(SLScene* s, SLSceneView* sv)
                                             shadowMap->useCubemap(useCubemap);
                                     }
 
-                                    SLfloat clipNear = shadowMap->clipNear();
-                                    SLfloat clipFar  = shadowMap->clipFar();
+                                    SLfloat clipNear = shadowMap->lightClipNear();
+                                    SLfloat clipFar  = shadowMap->lightClipFar();
                                     SLfloat factor   = shadowMap->cascadesFactor();
 
                                     if (!shadowMap->useCascaded())
@@ -3239,7 +3235,8 @@ void AppDemoGui::buildProperties(SLScene* s, SLSceneView* sv)
                                     else
                                     {
                                         SLint numCascades = shadowMap->numCascades();
-                                        if (ImGui::SliderInt("Number of cascades", &numCascades, 1, 5))
+                                        SLint maxCascades = shadowMap->maxCascades();
+                                        if (ImGui::SliderInt("Number of cascades", &numCascades, 1, maxCascades))
                                             shadowMap->numCascades(numCascades);
                                         if (ImGui::SliderFloat("Cascades factor", &factor, 1.0, 500.0f))
                                             shadowMap->cascadesFactor(factor);
@@ -3267,15 +3264,18 @@ void AppDemoGui::buildProperties(SLScene* s, SLSceneView* sv)
 
                                     if (!shadowMap->useCubemap())
                                     {
-                                        SLbool doesSmoothShadows = light->doSoftShadows();
-                                        if (ImGui::Checkbox("Smooth shadows enabled", &doesSmoothShadows))
-                                            light->doSmoothShadows(doesSmoothShadows);
+                                        SLbool doSmoothShadows = light->doSoftShadows();
+                                        if (ImGui::Checkbox("Do smooth shadows", &doSmoothShadows))
+                                            light->doSmoothShadows(doSmoothShadows);
 
                                         SLuint pcfLevel = light->softShadowLevel();
                                         if (ImGui::SliderInt("Smoothing level", (SLint*)&pcfLevel, 1, 3))
                                             light->smoothShadowLevel(pcfLevel);
                                     }
 
+                                    SLbool doColoredShadows = SLLight::doColoredShadows;
+                                    if (ImGui::Checkbox("Do colored shadows", &doColoredShadows))
+                                        SLLight::doColoredShadows = doColoredShadows;
 #ifndef SL_GLES
                                     SLVec2i rayCount = shadowMap->rayCount();
                                     if (ImGui::InputInt2("Visualization rays", (int*)&rayCount))
@@ -3614,120 +3614,122 @@ void AppDemoGui::buildProperties(SLScene* s, SLSceneView* sv)
                         {
                         for (auto& i : m->textures((SLTextureType)j))
                         {
-                            SLGLTexture* tex    = i;
-                            void*        tid    = (ImTextureID)(intptr_t)tex->texID();
-                            SLfloat      w      = (SLfloat)tex->width();
-                            SLfloat      h      = (SLfloat)tex->height();
-                            SLfloat      h_to_w = h / w;
-
-                            if (ImGui::TreeNode(tex->name().c_str()))
+                            for (auto& i : m->textures((SLTextureType)j))
                             {
-                                float mbCPU = 0.0f;
-                                for (auto img : tex->images())
-                                    mbCPU += (float)img->bytesPerImage();
-                                float mbGPU = (float)tex->bytesOnGPU();
-                                float mbDSK = (float)tex->bytesInFile();
+                                SLGLTexture* tex    = i;
+                                void*        tid    = (ImTextureID)(intptr_t)tex->texID();
+                                SLfloat      w      = (SLfloat)tex->width();
+                                SLfloat      h      = (SLfloat)tex->height();
+                                SLfloat      h_to_w = h / w;
 
-                                mbDSK /= 1E6f;
-                                mbCPU /= 1E6f;
-                                mbGPU /= 1E6f;
-
-                                ImGui::Text("Size(PX): %dx%dx%d", tex->width(), tex->height(), tex->depth());
-                                ImGui::Text("Size(MB): GPU:%4.2f, CPU:%4.2f, DSK:%4.2f", mbGPU, mbCPU, mbDSK);
-                                ImGui::Text("TexID   : %u (%s)", tex->texID(), tex->isTexture() ? "ok" : "not ok");
-                                ImGui::Text("Type    : %s", tex->typeName().c_str());
-#ifdef SL_BUILD_WITH_KTX
-                                ImGui::Text("Compr.  : %s", tex->compressionFormatStr(tex->compressionFormat()).c_str());
-#endif
-                                ImGui::Text("Min.Flt : %s", tex->minificationFilterName().c_str());
-                                ImGui::Text("Mag.Flt : %s", tex->magnificationFilterName().c_str());
-
-                                if (tex->target() == GL_TEXTURE_2D)
+                                if (ImGui::TreeNode(tex->name().c_str()))
                                 {
-                                    if (typeid(*tex) == typeid(SLTexColorLUT))
+                                    float mbCPU = 0.0f;
+                                    for (auto img : tex->images())
+                                        mbCPU += (float)img->bytesPerImage();
+                                    float mbGPU = (float)tex->bytesOnGPU();
+                                    float mbDSK = (float)tex->bytesInFile();
+
+                                    mbDSK /= 1E6f;
+                                    mbCPU /= 1E6f;
+                                    mbGPU /= 1E6f;
+
+                                    ImGui::Text("Size(PX): %dx%dx%d", tex->width(), tex->height(), tex->depth());
+                                    ImGui::Text("Size(MB): GPU:%4.2f, CPU:%4.2f, DSK:%4.2f", mbGPU, mbCPU, mbDSK);
+                                    ImGui::Text("TexID   : %u (%s)", tex->texID(), tex->isTexture() ? "ok" : "not ok");
+                                    ImGui::Text("Type    : %s", tex->typeName().c_str());
+#ifdef SL_BUILD_WITH_KTX
+                                    ImGui::Text("Compr.  : %s", tex->compressionFormatStr(tex->compressionFormat()).c_str());
+#endif
+                                    ImGui::Text("Min.Flt : %s", tex->minificationFilterName().c_str());
+                                    ImGui::Text("Mag.Flt : %s", tex->magnificationFilterName().c_str());
+
+                                    if (tex->target() == GL_TEXTURE_2D)
                                     {
-                                        SLTexColorLUT* lut = (SLTexColorLUT*)i;
-                                        if (ImGui::TreeNode("Color Points in Transfer Function"))
+                                        if (typeid(*tex) == typeid(SLTexColorLUT))
                                         {
-                                            showLUTColors(lut);
-                                            ImGui::TreePop();
-                                        }
-
-                                        if (ImGui::TreeNode("Alpha Points in Transfer Function"))
-                                        {
-                                            for (SLulong a = 0; a < lut->alphas().size(); ++a)
+                                            SLTexColorLUT* lut = (SLTexColorLUT*)i;
+                                            if (ImGui::TreeNode("Color Points in Transfer Function"))
                                             {
-                                                ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.25f);
-                                                SLfloat alpha = lut->alphas()[a].alpha;
-                                                SLchar  label[20];
-                                                sprintf(label, "Alpha %lu", a);
-                                                if (ImGui::SliderFloat(label, &alpha, 0.0f, 1.0f, "%3.2f"))
-                                                {
-                                                    lut->alphas()[a].alpha = alpha;
-                                                    lut->generateTexture();
-                                                }
-                                                ImGui::SameLine();
-                                                sprintf(label, "Pos. %lu", a);
-                                                SLfloat pos = lut->alphas()[a].pos;
-                                                if (a > 0 && a < lut->alphas().size() - 1)
-                                                {
-                                                    SLfloat min = lut->alphas()[a - 1].pos +
-                                                                  2.0f / (SLfloat)lut->length();
-                                                    SLfloat max = lut->alphas()[a + 1].pos -
-                                                                  2.0f / (SLfloat)lut->length();
-                                                    if (ImGui::SliderFloat(label, &pos, min, max, "%3.2f"))
-                                                    {
-                                                        lut->alphas()[a].pos = pos;
-                                                        lut->generateTexture();
-                                                    }
-                                                }
-                                                else
-                                                    ImGui::Text("%3.2f Pos. %lu", pos, a);
-
-                                                ImGui::PopItemWidth();
+                                                showLUTColors(lut);
+                                                ImGui::TreePop();
                                             }
 
-                                            ImGui::TreePop();
+                                            if (ImGui::TreeNode("Alpha Points in Transfer Function"))
+                                            {
+                                                for (SLulong a = 0; a < lut->alphas().size(); ++a)
+                                                {
+                                                    ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.25f);
+                                                    SLfloat alpha = lut->alphas()[a].alpha;
+                                                    SLchar  label[20];
+                                                    sprintf(label, "Alpha %lu", a);
+                                                    if (ImGui::SliderFloat(label, &alpha, 0.0f, 1.0f, "%3.2f"))
+                                                    {
+                                                        lut->alphas()[a].alpha = alpha;
+                                                        lut->generateTexture();
+                                                    }
+                                                    ImGui::SameLine();
+                                                    sprintf(label, "Pos. %lu", a);
+                                                    SLfloat pos = lut->alphas()[a].pos;
+                                                    if (a > 0 && a < lut->alphas().size() - 1)
+                                                    {
+                                                        SLfloat min = lut->alphas()[a - 1].pos +
+                                                                      2.0f / (SLfloat)lut->length();
+                                                        SLfloat max = lut->alphas()[a + 1].pos -
+                                                                      2.0f / (SLfloat)lut->length();
+                                                        if (ImGui::SliderFloat(label, &pos, min, max, "%3.2f"))
+                                                        {
+                                                            lut->alphas()[a].pos = pos;
+                                                            lut->generateTexture();
+                                                        }
+                                                    }
+                                                    else
+                                                        ImGui::Text("%3.2f Pos. %lu", pos, a);
+
+                                                    ImGui::PopItemWidth();
+                                                }
+
+                                                ImGui::TreePop();
+                                            }
+
+                                            ImGui::Image(tid,
+                                                         ImVec2(texW, texW * 0.15f),
+                                                         ImVec2(0, 1),
+                                                         ImVec2(1, 0),
+                                                         ImVec4(1, 1, 1, 1),
+                                                         ImVec4(1, 1, 1, 1));
+
+                                            SLVfloat allAlpha = lut->allAlphas();
+                                            ImGui::PlotLines("",
+                                                             allAlpha.data(),
+                                                             (SLint)allAlpha.size(),
+                                                             0,
+                                                             nullptr,
+                                                             0.0f,
+                                                             1.0f,
+                                                             ImVec2(texW, texW * 0.25f));
                                         }
-
-                                        ImGui::Image(tid,
-                                                     ImVec2(texW, texW * 0.15f),
-                                                     ImVec2(0, 1),
-                                                     ImVec2(1, 0),
-                                                     ImVec4(1, 1, 1, 1),
-                                                     ImVec4(1, 1, 1, 1));
-
-                                        SLVfloat allAlpha = lut->allAlphas();
-                                        ImGui::PlotLines("",
-                                                         allAlpha.data(),
-                                                         (SLint)allAlpha.size(),
-                                                         0,
-                                                         nullptr,
-                                                         0.0f,
-                                                         1.0f,
-                                                         ImVec2(texW, texW * 0.25f));
+                                        else
+                                        {
+                                            ImGui::Image(tid,
+                                                         ImVec2(texW, texW * h_to_w),
+                                                         ImVec2(0, 1),
+                                                         ImVec2(1, 0),
+                                                         ImVec4(1, 1, 1, 1),
+                                                         ImVec4(1, 1, 1, 1));
+                                        }
                                     }
                                     else
                                     {
-                                        ImGui::Image(tid,
-                                                     ImVec2(texW, texW * h_to_w),
-                                                     ImVec2(0, 1),
-                                                     ImVec2(1, 0),
-                                                     ImVec4(1, 1, 1, 1),
-                                                     ImVec4(1, 1, 1, 1));
+                                        if (tex->target() == GL_TEXTURE_CUBE_MAP)
+                                            ImGui::Text("Cube maps can not be displayed.");
+                                        else if (tex->target() == GL_TEXTURE_3D)
+                                            ImGui::Text("3D textures can not be displayed.");
                                     }
-                                }
-                                else
-                                {
-                                    if (tex->target() == GL_TEXTURE_CUBE_MAP)
-                                        ImGui::Text("Cube maps can not be displayed.");
-                                    else if (tex->target() == GL_TEXTURE_3D)
-                                        ImGui::Text("3D textures can not be displayed.");
-                                }
 
-                                ImGui::TreePop();
+                                    ImGui::TreePop();
+                                }
                             }
-                        }
                         }
                         ImGui::TreePop();
                     }

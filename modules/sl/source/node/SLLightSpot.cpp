@@ -1,10 +1,10 @@
 //#############################################################################
 //  File:      SLLightSpot.cpp
-//  Author:    Marcus Hudritsch
+//  Authors:   Marcus Hudritsch
 //  Date:      July 2014
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -181,36 +181,44 @@ void SLLightSpot::drawMesh(SLSceneView* sv)
     }
 }
 //-----------------------------------------------------------------------------
-void SLLightSpot::createShadowMap(float   clipNear,
-                                  float   clipFar,
+/*! Creates an fixed sized standard shadow map for the spotlight.
+ * @param lightClipNear The light frustums near clipping distance
+ * @param lightClipFar The light frustums near clipping distance
+ * @param size Ignored for spot lights
+ * @param texSize Shadow texture map size
+ */
+void SLLightSpot::createShadowMap(float   lightClipNear,
+                                  float   lightClipFar,
                                   SLVec2f size,
                                   SLVec2i texSize)
 {
     if (!_shadowMap)
         delete _shadowMap;
 
-    _shadowMap = new SLShadowMap(P_monoPerspective,
-                                 this,
-                                 clipNear,
-                                 clipFar,
+    _shadowMap = new SLShadowMap(this,
+                                 lightClipNear,
+                                 lightClipFar,
                                  size,
                                  texSize);
 }
 //-----------------------------------------------------------------------------
-void SLLightSpot::createShadowMap(SLCamera* camera,
-                                  SLVec2f   size,
-                                  SLVec2i   texSize,
-                                  int       numCascades)
+/*! Creates an automatic sized shadow map for the spot light.
+ * @param camera Pointer to the camera for witch the shadow map gets sized
+ * @param texSize Shadow texture map size
+ * @param numCascades This value is ignored (default 0)
+ */
+void SLLightSpot::createShadowMapAutoSize(SLCamera* camera,
+                                          SLVec2i   texSize,
+                                          int       numCascades)
 {
     (void)numCascades;
     if (!_shadowMap)
         delete _shadowMap;
 
-    _shadowMap = new SLShadowMap(P_monoPerspective,
-                                 this,
+    _shadowMap = new SLShadowMap(this,
                                  camera,
-                                 size,
-                                 texSize);
+                                 texSize,
+                                 0);
 }
 //-----------------------------------------------------------------------------
 /*!

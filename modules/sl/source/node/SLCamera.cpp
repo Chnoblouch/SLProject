@@ -1,10 +1,9 @@
 //#############################################################################
 //  File:      SLCamera.cpp
-//  Author:    Marc Wacker, Marcus Hudritsch
 //  Date:      July 2014
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marc Wacker, Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -44,14 +43,12 @@ SLCamera::SLCamera(const SLstring& name,
     _fogEnd(6.0f),
     _fogColor(SLCol4f::GRAY),
     _fogColorIsBack(true),
-    _fbRect(0, 0, 640, 480),
+    _viewport(0, 0, 640, 480),
     _background(SLGLProgramManager::get(textureOnlyProgramId),
                 SLGLProgramManager::get(colorAttributeProgramId)),
     _onCamUpdateCB(nullptr)
 {
     _fovInit       = 0;
-    _viewportW     = 640;
-    _viewportH     = 480;
     _viewportRatio = 640.0f / 480.0f; // will be overwritten in setProjection
     _clipNear      = 0.1f;
     _clipFar       = 300.0f;
@@ -243,16 +240,16 @@ void SLCamera::drawMesh(SLSceneView* sv)
             SLVVec3f P;
             SLfloat  aspect = sv->scrWdivH();
             SLfloat  tanFov = tan(_fovV * Utils::DEG2RAD * 0.5f);
-            SLfloat  tF     = tanFov * _clipFar;        //top far
-            SLfloat  rF     = tF * aspect;              //right far
-            SLfloat  lF     = -rF;                      //left far
-            SLfloat  tP     = tanFov * _focalDist;      //top projection at focal distance
-            SLfloat  rP     = tP * aspect;              //right projection at focal distance
-            SLfloat  lP     = -tP * aspect;             //left projection at focal distance
-            SLfloat  cP     = std::min(lP, rP) * 0.05f; //size of cross at focal point
-            SLfloat  tN     = tanFov * _clipNear;       //top near
-            SLfloat  rN     = tN * aspect;              //right near
-            SLfloat  lN     = -tN * aspect;             //left near
+            SLfloat  tF     = tanFov * _clipFar;        // top far
+            SLfloat  rF     = tF * aspect;              // right far
+            SLfloat  lF     = -rF;                      // left far
+            SLfloat  tP     = tanFov * _focalDist;      // top projection at focal distance
+            SLfloat  rP     = tP * aspect;              // right projection at focal distance
+            SLfloat  lP     = -tP * aspect;             // left projection at focal distance
+            SLfloat  cP     = std::min(lP, rP) * 0.05f; // size of cross at focal point
+            SLfloat  tN     = tanFov * _clipNear;       // top near
+            SLfloat  rN     = tN * aspect;              // right near
+            SLfloat  lN     = -tN * aspect;             // left near
 
             // small line in view direction
             P.push_back(SLVec3f(0, 0, 0));
@@ -316,7 +313,7 @@ void SLCamera::drawMesh(SLSceneView* sv)
         SLCol4f color = sv->s()->singleNodeSelected() == this ? SLCol4f::YELLOW : SLCol4f::WHITE * 0.7f;
         _vao.drawArrayAsColored(PT_lines, color);
 
-        if (!sv->skybox())
+        if (!sv->s()->skybox())
             _background.renderInScene(farLT, farLB, farRT, farRB);
     }
 }
@@ -337,8 +334,8 @@ void SLCamera::calcMinMax(SLVec3f& minV, SLVec3f& maxV) const
 {
     SLVec3f P[5];
     SLfloat tanFov = tan(_fovV * Utils::DEG2RAD * 0.5f);
-    SLfloat tN     = tanFov * _clipNear;  //top near
-    SLfloat rN     = tN * _viewportRatio; //right near
+    SLfloat tN     = tanFov * _clipNear;  // top near
+    SLfloat rN     = tN * _viewportRatio; // right near
 
     // The camera center
     P[0].set(0, 0, 0);
@@ -387,7 +384,7 @@ SLVec2f SLCamera::frustumSizeAtDistance(SLfloat distance)
     SLVec2f frustumSize;
 
     frustumSize.y = 2.f * distance * std::tan(_fovV * 0.5f * DEG2RAD);
-    frustumSize.x = frustumSize.y * _viewportRatio; //w / h
+    frustumSize.x = frustumSize.y * _viewportRatio; // w / h
 
     return frustumSize;
 }
@@ -437,8 +434,6 @@ void SLCamera::setViewport(SLSceneView* sv, const SLEyeType eye)
 {
     SLGLState* stateGL = SLGLState::instance();
     SLRecti    vpRect  = sv->viewportRect();
-    _viewportW         = vpRect.width;
-    _viewportH         = vpRect.height;
     _viewportRatio     = (float)vpRect.width / (float)vpRect.height;
 
     //////////////////
@@ -446,11 +441,10 @@ void SLCamera::setViewport(SLSceneView* sv, const SLEyeType eye)
     //////////////////
 
     // calculate frame buffer size
-    // This can be different from the logical viewport size on high DPI displays
-    SLint fbX  = (SLint)(vpRect.x * sv->scr2fbX());
-    SLint fbY  = (SLint)(vpRect.y * sv->scr2fbY());
-    SLint fbW  = (SLint)(vpRect.width * sv->scr2fbX());
-    SLint fbH  = (SLint)(vpRect.height * sv->scr2fbY());
+    SLint fbX  = vpRect.x;
+    SLint fbY  = vpRect.y;
+    SLint fbW  = vpRect.width;
+    SLint fbH  = vpRect.height;
     SLint fbW2 = fbW >> 1;  // fbW/2
     SLint fbH2 = fbH >> 1;  // fbH/2
     SLint fbH4 = fbH2 >> 1; // fbH2/2
@@ -460,28 +454,28 @@ void SLCamera::setViewport(SLSceneView* sv, const SLEyeType eye)
         SLint fbOcW2 = sv->oculusFB()->halfWidth();
         SLint fbOcH  = sv->oculusFB()->height();
         if (eye == ET_left)
-            stateGL->viewportFB(0, 0, fbOcW2, fbOcH);
+            stateGL->viewport(0, 0, fbOcW2, fbOcH);
         else
-            stateGL->viewportFB(fbOcW2, 0, fbOcW2, fbOcH);
+            stateGL->viewport(fbOcW2, 0, fbOcW2, fbOcH);
     }
     else if (_projection == P_stereoSideBySide)
     {
         if (eye == ET_left)
-            stateGL->viewportFB(0, 0, fbW2, fbH);
+            stateGL->viewport(0, 0, fbW2, fbH);
         else
-            stateGL->viewportFB(fbW2, 0, fbW2, fbH);
+            stateGL->viewport(fbW2, 0, fbW2, fbH);
     }
     else if (_projection == P_stereoSideBySideP)
     {
         if (eye == ET_left)
-            stateGL->viewportFB(0, fbH4, fbW2, fbH2);
+            stateGL->viewport(0, fbH4, fbW2, fbH2);
         else
-            stateGL->viewportFB(fbW2, fbH4, fbW2, fbH2);
+            stateGL->viewport(fbW2, fbH4, fbW2, fbH2);
     }
     else
-        stateGL->viewportFB(fbX, fbY, fbW, fbH);
+        stateGL->viewport(fbX, fbY, fbW, fbH);
 
-    _fbRect.set(fbX, fbY, fbW, fbH);
+    _viewport.set(fbX, fbY, fbW, fbH);
 }
 //-----------------------------------------------------------------------------
 /*!
@@ -511,8 +505,8 @@ void SLCamera::setProjection(SLSceneView* sv, const SLEyeType eye)
             break;
 
         case P_monoIntrinsic:
-            stateGL->projectionMatrix.perspectiveCenteredPP((float)_viewportW,
-                                                            (float)_viewportH,
+            stateGL->projectionMatrix.perspectiveCenteredPP((float)_viewport.width,
+                                                            (float)_viewport.height,
                                                             _fx,
                                                             _fy,
                                                             _cx,
@@ -628,7 +622,7 @@ void SLCamera::updateEnuCorrRenu(SLSceneView*   sv,
     in enu frame definition: this is the camera z-axis expressed in enu frame.*/
     SLVec3f normalCamXYPlane = enuRc * SLVec3f(0, 0, 1);
 
-    //enu x-y-plane definition:  this is just the z-axis
+    // enu x-y-plane definition:  this is just the z-axis
     SLVec3f normalEnuXYPlane = SLVec3f(0, 0, 1);
 
     /* 2. Estimation of intersection line (horizon): Then the crossproduct of
@@ -645,11 +639,11 @@ void SLCamera::updateEnuCorrRenu(SLSceneView*   sv,
     SLVec3f cHorizon = cRenu * enuHorizon;
     cHorizon.normalize();
 
-    //angle between x-axis and horizon
+    // angle between x-axis and horizon
     float horizAngDEG = atan2f((float)cHorizon.y, (float)cHorizon.x) * RAD2DEG;
 
-    //rotate display x- and y-offsets to enuUp - horizon plane
-    SLVec3f cOffsetPix(_xOffsetPix, _yOffsetPix, 0.f);
+    // rotate display x- and y-offsets to enuUp - horizon plane
+    SLVec3f cOffsetPix((SLfloat)_xOffsetPix, (SLfloat)_yOffsetPix, 0.f);
     SLMat3f rot(horizAngDEG, 0, 0, 1);
     enuOffsetPix = rot * cOffsetPix;
 
@@ -683,7 +677,7 @@ void SLCamera::updateEnuCorrRenu(SLSceneView*   sv,
             SLMat3f rotVertical(yawOffsetRAD * RAD2DEG,
                                 SLVec3f(0, 0, 1));
 
-            //we have to right multiply new rotation because new rotations are estimated w.r.t. enu coordinate frame
+            // we have to right multiply new rotation because new rotations are estimated w.r.t. enu coordinate frame
             _enucorrRenu = _enucorrRenu * rotVertical;
         }
     }
@@ -708,58 +702,58 @@ void SLCamera::setView(SLSceneView* sv, const SLEyeType eye)
             return;
         }
 
-        //camera focal length
+        // camera focal length
         float f = 1.f;
 
-        //finger x-y-movement expressed in enu frame
+        // finger x-y-movement expressed in enu frame
         SLVec3f enuOffsetPix;
 
         ///////////////////////////////////////////////////////////////////////
         // Build pose of camera in world frame (scene) using device rotation //
         ///////////////////////////////////////////////////////////////////////
 
-        //camera rotation with respect to (w.r.t.) sensor
+        // camera rotation with respect to (w.r.t.) sensor
         SLMat3f sRc;
         sRc.rotation(-90, 0, 0, 1);
 
-        //sensor rotation w.r.t. east-north-down
+        // sensor rotation w.r.t. east-north-down
         SLMat3f enuRs;
         enuRs.setMatrix(_devRot->rotationAveraged());
 
-        //define camera to enu rotation matrix
+        // define camera to enu rotation matrix
         SLMat3f enuRc = enuRs * sRc;
 
-        //Calculate and apply correction from finger x-y-rotation
+        // Calculate and apply correction from finger x-y-rotation
         updateEnuCorrRenu(sv, enuRc, f, enuOffsetPix);
 
         SLMat3f wyRenucorr;
         if (_devRot->zeroYawAtStart())
         {
-            //east-north-down w.r.t. world-yaw
+            // east-north-down w.r.t. world-yaw
             SLfloat rotYawOffsetDEG = -1 * _devRot->startYawRAD() * Utils::RAD2DEG + 90;
             if (rotYawOffsetDEG > 180)
                 rotYawOffsetDEG -= 360;
             wyRenucorr.rotation(rotYawOffsetDEG, 0, 0, 1);
         }
 
-        //world-yaw rotation w.r.t. world
+        // world-yaw rotation w.r.t. world
         SLMat3f wRwy;
         wRwy.rotation(-90, 1, 0, 0);
 
-        //combination of partial rotations to orientation of camera w.r.t world
+        // combination of partial rotations to orientation of camera w.r.t world
         SLMat3f wRc = wRwy * wyRenucorr * _enucorrRenu * enuRc;
 
-        //camera translations w.r.t world:
-        //SLVec3f wtc = updateAndGetWM().translation();
-        //SLVec3f wtc = _om.translation();
+        // camera translations w.r.t world:
+        // SLVec3f wtc = updateAndGetWM().translation();
+        // SLVec3f wtc = _om.translation();
 
-        //combination of rotation and translation:
-        //SLMat4f wTc;
-        //wTc.setRotation(wRc);
-        //wTc.setTranslation(wtc);
+        // combination of rotation and translation:
+        // SLMat4f wTc;
+        // wTc.setRotation(wRc);
+        // wTc.setTranslation(wtc);
 
-        //set camera pose to the object matrix
-        //om(wTc);
+        // set camera pose to the object matrix
+        // om(wTc);
         _om.setRotation(wRc);
         needUpdate();
 
@@ -776,13 +770,13 @@ void SLCamera::setView(SLSceneView* sv, const SLEyeType eye)
         */
     }
 
-    //location sensor is turned on and the scene has a global reference position
+    // location sensor is turned on and the scene has a global reference position
     else if (_camAnim == CA_deviceRotLocYUp)
     {
-        //camera focal length
+        // camera focal length
         float f = 1.f;
 
-        //finger x-y-movement expressed in enu frame
+        // finger x-y-movement expressed in enu frame
         SLVec3f enuOffsetPix;
 
         if (!_devRot) SL_EXIT_MSG("SLCamera::setView: _devRot not set!");
@@ -804,10 +798,10 @@ void SLCamera::setView(SLSceneView* sv, const SLEyeType eye)
             SLMat3f enuRs;
             enuRs.setMatrix(_devRot->rotationAveraged());
 
-            //define camera to enu rotation matrix
+            // define camera to enu rotation matrix
             SLMat3f enuRc = enuRs * sRc;
 
-            //Calculate and apply correction from finger x-y-rotation
+            // Calculate and apply correction from finger x-y-rotation
             updateEnuCorrRenu(sv, enuRc, f, enuOffsetPix);
 
             /* enu rotation (after correction) w.r.t. world
@@ -827,7 +821,7 @@ void SLCamera::setView(SLSceneView* sv, const SLEyeType eye)
             needUpdate();
         }
 
-        //The device location sensor (GPS) is turned on and the scene has a global reference position
+        // The device location sensor (GPS) is turned on and the scene has a global reference position
         if (_devLoc && _devLoc->hasOrigin())
         {
             if (_devLoc->isUsed())
@@ -875,10 +869,10 @@ void SLCamera::setView(SLSceneView* sv, const SLEyeType eye)
     }
     else if (_camAnim == CA_off)
     {
-        //nothing
+        // nothing
     }
 
-    //clear stored finger rotation
+    // clear stored finger rotation
     _xOffsetPix = 0;
     _yOffsetPix = 0;
 
@@ -911,7 +905,7 @@ void SLCamera::setView(SLSceneView* sv, const SLEyeType eye)
                     rotation = sv->s()->oculus()->orientation(eye);
                     trackingPos.translate(-1 * sv->s()->oculus()->position(eye));
                 }
-                //todo else rotation = s->deviceRotation();
+                // todo else rotation = s->deviceRotation();
 
                 SLfloat rotX = 0.0f, rotY = 0.0f, rotZ = 0.0f;
                 rotation.toMat4().toEulerAnglesZYX(rotZ, rotY, rotX);
@@ -1012,7 +1006,7 @@ SLbool SLCamera::onMouseDown(const SLMouseButton button,
 
         if (_camAnim == CA_trackball)
         {
-            //todo anim
+            // todo anim
             _trackballStartVec = trackballVec(x, y);
             return true;
         }
@@ -1155,8 +1149,8 @@ SLbool SLCamera::onMouseMove(const SLMouseButton button,
                 if (_devRot->offsetMode() == ROM_oneFingerX ||
                     _devRot->offsetMode() == ROM_oneFingerXY)
                 {
-                    _yOffsetPix += (y - _oldTouchPos1.y);
-                    _xOffsetPix += (x - _oldTouchPos1.x);
+                    _yOffsetPix += (SLint)(y - _oldTouchPos1.y);
+                    _xOffsetPix += (SLint)(x - _oldTouchPos1.x);
                 }
             }
         }
@@ -1171,8 +1165,8 @@ SLbool SLCamera::onMouseMove(const SLMouseButton button,
         {
             // Calculate the fraction delta of the mouse movement
             SLVec2f dMouse(x - _oldTouchPos1.x, _oldTouchPos1.y - y);
-            dMouse.x /= (SLfloat)_viewportW;
-            dMouse.y /= (SLfloat)_viewportH;
+            dMouse.x /= (SLfloat)_viewport.width;
+            dMouse.y /= (SLfloat)_viewport.height;
 
             // scale factor depending on the space size at focal dist
             SLfloat spaceH = tan(Utils::DEG2RAD * _fovV / 2) * _focalDist * 2.0f;
@@ -1186,7 +1180,7 @@ SLbool SLCamera::onMouseMove(const SLMouseButton button,
             else
                 translate(SLVec3f(-dMouse.x, -dMouse.y, 0), TS_object);
 
-            //todo anim : bleibt!!
+            // todo anim : bleibt!!
             _oldTouchPos1.set((SLfloat)x, (SLfloat)y);
         }
     } //=======================================================================
@@ -1215,7 +1209,7 @@ SLbool SLCamera::onMouseUp(const SLMouseButton button,
             return true;
         }
 
-        //todo anim
+        // todo anim
         if (_camAnim == CA_turntableYUp)
             return true;
         else if (_camAnim == CA_walkingYUp)
@@ -1328,8 +1322,8 @@ SLbool SLCamera::onTouch2Move(const SLint x1,
         SLVec2f delta(nowCenter - oldCenter);
 
         // scale to 0-1
-        delta.x /= _viewportW;
-        delta.y /= _viewportH;
+        delta.x /= _viewport.width;
+        delta.y /= _viewport.height;
 
         // scale to space size
         delta.x *= spaceW;
@@ -1351,8 +1345,8 @@ SLbool SLCamera::onTouch2Move(const SLint x1,
             {
                 if (_devLoc->offsetMode() == LOM_twoFingerY)
                 {
-                    //string msg = "TwoFingerOffset: " + delta.toString();
-                    //SL_LOG(msg.c_str());
+                    // string msg = "TwoFingerOffset: " + delta.toString();
+                    // SL_LOG(msg.c_str());
                     SLVec3d offsetENU = _devLoc->offsetENU();
                     delta *= _mouseRotationFactor;
                     offsetENU.y += delta.y;
@@ -1374,7 +1368,7 @@ SLbool SLCamera::onTouch2Move(const SLint x1,
 
         if (_camAnim == CA_turntableYUp)
         { // scale to 0-1
-            delta /= (SLfloat)_viewportH;
+            delta /= (SLfloat)_viewport.height;
 
             // scale to space height
             delta *= spaceH * 2;
@@ -1481,17 +1475,17 @@ coefficients from the combined view and projection matrix.
 */
 void SLCamera::setFrustumPlanes()
 {
-    // build combined view projection matrix
-    // SLCamera::setView should've been called before so viewMatrix contains the right value
     SLGLState* stateGL = SLGLState::instance();
-    SLFrustum::viewToFrustumPlanes(_plane, stateGL->projectionMatrix, stateGL->viewMatrix);
+    SLFrustum::viewToFrustumPlanes(_plane,
+                                   stateGL->projectionMatrix,
+                                   stateGL->viewMatrix);
 }
 //-----------------------------------------------------------------------------
 //!< Horizontal field of view
 SLfloat SLCamera::fovH() const
 {
-    float f = (0.5f * (float)_viewportH) / tanf(_fovV * 0.5f * Utils::DEG2RAD);
-    return 2.f * atanf(0.5f * (float)_viewportW / f) * Utils::RAD2DEG;
+    float f = (0.5f * (float)_viewport.height) / tanf(_fovV * 0.5f * Utils::DEG2RAD);
+    return 2.f * atanf(0.5f * (float)_viewport.width / f) * Utils::RAD2DEG;
 }
 //-----------------------------------------------------------------------------
 //! eyeToPixelRay returns the a ray from the eye to the center of a pixel.
@@ -1516,7 +1510,7 @@ void SLCamera::eyeToPixelRay(SLfloat x, SLfloat y, SLRay* ray)
         SLfloat hw = hh * _viewportRatio;
 
         // calculate the size of a pixel in world coords.
-        SLfloat pixel = hw * 2 / _viewportW;
+        SLfloat pixel = hw * 2 / _viewport.width;
 
         SLVec3f TL  = EYE - hw * LR + hh * LU + pixel / 2 * LR - pixel / 2 * LU;
         SLVec3f dir = LA;
@@ -1536,7 +1530,7 @@ void SLCamera::eyeToPixelRay(SLfloat x, SLfloat y, SLRay* ray)
         SLfloat hw = hh * _viewportRatio;
 
         // calculate the size of a pixel in world coords.
-        SLfloat pixel = hw * 2 / _viewportW;
+        SLfloat pixel = hw * 2 / _viewport.width;
 
         // calculate a vector to the center (C) of the top left (TL) pixel
         SLVec3f C   = LA * _focalDist;
@@ -1651,11 +1645,11 @@ is used for the trackball camera animation.
  */
 SLVec3f SLCamera::trackballVec(const SLint x, const SLint y) const
 {
-    //Calculate x & y component to the virtual unit sphere
-    SLfloat r = (SLfloat)(_viewportW < _viewportH ? _viewportW / 2 : _viewportH / 2) * _trackballSize;
+    // Calculate x & y component to the virtual unit sphere
+    SLfloat r = (SLfloat)(_viewport.width < _viewport.height ? _viewport.width / 2 : _viewport.height / 2) * _trackballSize;
 
-    SLVec3f vec((SLfloat)(x - _viewportW * 0.5f) / r,
-                -(SLfloat)(y - _viewportH * 0.5f) / r);
+    SLVec3f vec((SLfloat)(x - _viewport.width * 0.5f) / r,
+                -(SLfloat)(y - _viewport.height * 0.5f) / r);
 
     // d = length of vector x,y
     SLfloat d = sqrt(vec.x * vec.x + vec.y * vec.y);
@@ -1693,16 +1687,12 @@ void SLCamera::passToUniforms(SLGLProgram* program)
     loc = program->uniform1f("u_camFogDensity", _fogDensity);
     loc = program->uniform1f("u_camFogStart", _fogStart);
     loc = program->uniform1f("u_camFogEnd", _fogEnd);
-    loc = program->uniform4fv("u_camFogColor", 1, (SLfloat*)&_fogColor);
-    loc = program->uniform1i("u_camFbWidth", _fbRect.width);
-    loc = program->uniform1i("u_camFbHeight", _fbRect.height);
-    loc = program->uniform1f("u_bgWidth", _background.rect().width);
-    loc = program->uniform1f("u_bgHeight", _background.rect().height);
-    loc = program->uniform1f("u_bgLeft", _background.rect().x);
-    loc = program->uniform1f("u_bgBottom", _background.rect().y);
     loc = program->uniform1f("u_camClipNear", _clipNear);
     loc = program->uniform1f("u_camClipFar", _clipFar);
-
-    //SL_LOG("SLCamera: width:%f height:%f left:%f bottom:%f", _background.rect().width, _background.rect().height, _background.rect().x, _background.rect().x);
+    loc = program->uniform1f("u_camBkgdWidth", _background.rect().width);
+    loc = program->uniform1f("u_camBkgdHeight", _background.rect().height);
+    loc = program->uniform1f("u_camBkgdLeft", _background.rect().x);
+    loc = program->uniform1f("u_camBkgdBottom", _background.rect().y);
+    loc = program->uniform4fv("u_camFogColor", 1, (SLfloat*)&_fogColor);
 }
 //-----------------------------------------------------------------------------

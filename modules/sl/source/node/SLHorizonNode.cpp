@@ -1,10 +1,9 @@
 //#############################################################################
 //  File:      SLHorizonNode.cpp
-//  Author:    Michael Göttlicher
 //  Date:      November 2020
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Michael Göttlicher, Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Michael Göttlicher, Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -52,9 +51,9 @@ SLHorizonNode::SLHorizonNode(SLstring          name,
         cs             = size.x;
     }
     else
-        cs = refLen * 0.01f; // center size
+        cs = (float)refLen * 0.01f; // center size
 
-    float l = refLen * 0.35;
+    float l = (float)refLen * 0.35f;
 
     SLVVec3f points = {{-l, 0, 0},
                        {-cs, 0, 0},
@@ -86,6 +85,7 @@ void SLHorizonNode::doUpdate()
     //get latest orientation and update horizon
     SLVec3f horizon;
     SLAlgo::estimateHorizon(_devRot->rotationAveraged(), _sRc, horizon);
+
     //rotate node to align it to horizon
     float horizonAngle = std::atan2(horizon.y, horizon.x) * RAD2DEG;
     _horizonNode->rotation(horizonAngle,

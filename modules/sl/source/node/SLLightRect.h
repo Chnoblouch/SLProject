@@ -1,10 +1,10 @@
 //#############################################################################
 //  File:      SLLightRect.h
-//  Author:    Marcus Hudritsch
+//  Authors:   Marcus Hudritsch
 //  Date:      July 2014
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -50,20 +50,18 @@ public:
 
     ~SLLightRect() override;
 
-    void init(SLScene* s);
-    void drawRec(SLSceneView* sv) override;
-    bool hitRec(SLRay* ray) override;
-    void statsRec(SLNodeStats& stats) override;
-    void drawMesh(SLSceneView* sv) override;
-    void createShadowMap(float   clipNear = 0.1f,
-                         float   clipFar  = 20.0f,
-                         SLVec2f size     = SLVec2f(8, 8),
-                         SLVec2i texSize  = SLVec2i(1024, 1024)) override;
-    void createShadowMap(SLCamera* camera,
-                         SLVec2f   size        = SLVec2f(8, 8),
-                         SLVec2i   texSize     = SLVec2i(1024, 1024),
-                         int       numCascades = 0) override;
-
+    void    init(SLScene* s);
+    void    drawRec(SLSceneView* sv) override;
+    bool    hitRec(SLRay* ray) override;
+    void    statsRec(SLNodeStats& stats) override;
+    void    drawMesh(SLSceneView* sv) override;
+    void    createShadowMap(float   lightClipNear = 0.1f,
+                            float   lightClipFar  = 20.0f,
+                            SLVec2f size          = SLVec2f(8, 8),
+                            SLVec2i texSize       = SLVec2i(1024, 1024)) override;
+    void    createShadowMapAutoSize(SLCamera* camera,
+                                    SLVec2i   texSize     = SLVec2i(1024, 1024),
+                                    int       numCascades = 0) override;
     SLfloat shadowTest(SLRay*         ray,
                        const SLVec3f& L,
                        SLfloat        lightDist,

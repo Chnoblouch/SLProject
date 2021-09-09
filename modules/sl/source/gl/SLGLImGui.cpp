@@ -2,11 +2,10 @@
 //  File:      gl/SLGLImGui.cpp
 //  Purpose:   Wrapper Class around the external ImGui GUI-framework
 //             See also: https://github.com/ocornut/imgui
-//  Author:    Marcus Hudritsch
 //  Date:      October 2015
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -407,11 +406,11 @@ void SLGLImGui::onInitNewFrame(SLScene* s, SLSceneView* sv)
 }
 //-----------------------------------------------------------------------------
 //! Callback if window got resized
-void SLGLImGui::onResize(SLint scrW, SLint scrH, SLfloat scr2fbX, SLfloat scr2fbY)
+void SLGLImGui::onResize(SLint scrW, SLint scrH)
 {
     ImGuiIO& io                = ImGui::GetIO();
     io.DisplaySize             = ImVec2((SLfloat)scrW, (SLfloat)scrH);
-    io.DisplayFramebufferScale = ImVec2(scr2fbX, scr2fbY);
+    io.DisplayFramebufferScale = ImVec2(1, 1);
 }
 //-----------------------------------------------------------------------------
 //! Callback for main rendering for the ImGui GUI system

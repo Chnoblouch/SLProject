@@ -1,10 +1,9 @@
 //#############################################################################
 //  File:      SLInputEvent.h
-//  Author:    Marc Wacker
 //  Date:      January 2015
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marc Wacker, Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -38,7 +37,6 @@ class SLInputEvent
         KeyDown,
         KeyUp,
         Resize,
-        UpdateScr2fb,
         DeviceRotationPYR,
         DeviceRotationQUAT,
         CharInput,
@@ -106,17 +104,6 @@ class SLResizeEvent : public SLInputEvent
     int height;
 
     SLResizeEvent() : SLInputEvent(Resize) {}
-};
-
-//-----------------------------------------------------------------------------
-//! Specialized SLInput class for UpdateScr2fb events.
-class SLUpdateScr2fbEvent : public SLInputEvent
-{
-public:
-    float scr2fbX;
-    float scr2fbY;
-
-    SLUpdateScr2fbEvent() : SLInputEvent(UpdateScr2fb) {}
 };
 
 //-----------------------------------------------------------------------------

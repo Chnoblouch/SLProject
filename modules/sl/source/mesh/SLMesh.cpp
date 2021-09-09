@@ -1,10 +1,9 @@
 //#############################################################################
 //  File:      SLMesh.cpp
-//  Author:    Marcus Hudritsch
 //  Date:      July 2014
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -315,7 +314,7 @@ void SLMesh::init(SLNode* node)
 }
 //-----------------------------------------------------------------------------
 //! Simplified drawing method for shadow map creation
-/*! This is used from within SLShadowMap::drawNodesIntoDepthBuffer
+/*! This is used from within SLShadowMap::drawNodesIntoDepthBufferRec
 */
 void SLMesh::drawIntoDepthBuffer(SLSceneView* sv,
                                  SLNode*      node,
@@ -723,7 +722,7 @@ void SLMesh::drawSelectedVertices()
 //! Generate the Vertex Array Object for a specific shader program
 void SLMesh::generateVAO(SLGLVertexArray& vao)
 {
-    PROFILE_FUNCTION()
+    PROFILE_FUNCTION();
 
     vao.setAttrib(AT_position, AT_position, _finalP);
     if (!N.empty()) vao.setAttrib(AT_normal, AT_normal, _finalN);
@@ -1464,7 +1463,11 @@ void SLMesh::preShade(SLRay* ray)
 
                 SLVec3f T3(hitT.x, hitT.y, hitT.z);           // tangent with 3 components
                 T3.set(ray->hitNode->updateAndGetWMN() * T3); // transform tangent back to world space
+<<<<<<< HEAD
                 SLVec2f d   = bumpTex[0]->dudv(tc.x, tc.y);  // slope of bump-map at tc
+=======
+                SLVec2f d   = bumpTex[0]->dudv(tc.x, tc.y);   // slope of bump-map at tc
+>>>>>>> develop
                 SLVec3f Nrm = ray->hitNormal;                 // unperturbated normal
                 SLVec3f B(Nrm ^ T3);                          // bi-normal tangent B
                 B *= T[iA].w;                                 // correct handedness
@@ -1476,7 +1479,10 @@ void SLMesh::preShade(SLRay* ray)
         }
 
         // Get ambient occlusion
+<<<<<<< HEAD
 
+=======
+>>>>>>> develop
         SLVGLTexture& aoTex = ray->hitMesh->mat()->textures(TT_ambientOcclusion);
         if (!UV2.empty())
         {

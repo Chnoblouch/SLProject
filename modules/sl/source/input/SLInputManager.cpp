@@ -1,10 +1,9 @@
 //#############################################################################
 //  File:      SLInputManager.cpp
-//  Author:    Marc Wacker
 //  Date:      January 2015
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marc Wacker, Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -130,12 +129,6 @@ SLbool SLInputManager::processQueuedEvents(SLSceneView* sv)
                 case SLInputEvent::Resize: {
                     const SLResizeEvent* re = (const SLResizeEvent*)e;
                     sv->onResize(re->width, re->height);
-                }
-                break;
-
-                case SLInputEvent::UpdateScr2fb: {
-                    const SLUpdateScr2fbEvent* re = (const SLUpdateScr2fbEvent*)e;
-                    sv->scr2fb(re->scr2fbX, re->scr2fbY);
                 }
                 break;
                     

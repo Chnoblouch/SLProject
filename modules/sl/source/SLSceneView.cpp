@@ -1,10 +1,9 @@
 //#############################################################################
 //  File:      SLSceneView.cpp
-//  Author:    Marc Wacker, Marcus Hudritsch
 //  Date:      July 2014
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marc Wacker, Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -13,6 +12,7 @@
 #include <SLLight.h>
 #include <SLLightRect.h>
 #include <SLSceneView.h>
+#include <SLSkybox.h>
 #include <GlobalTimer.h>
 #include <SLInputManager.h>
 #include <Instrumentor.h>
@@ -104,12 +104,9 @@ void SLSceneView::init(SLstring       name,
     _scrWdiv2 = _scrW >> 1;
     _scrHdiv2 = _scrH >> 1;
     _scrWdivH = (SLfloat)_scrW / (SLfloat)_scrH;
-    _scr2fbX  = 1.0f;
-    _scr2fbY  = 1.0f;
 
     _renderType = RT_gl;
 
-    _skybox                   = nullptr;
     _screenCaptureIsRequested = false;
 
     if (_gui)
@@ -121,7 +118,6 @@ void SLSceneView::init(SLstring       name,
 void SLSceneView::unInit()
 {
     _camera     = &_sceneViewCamera;
-    _skybox     = nullptr; // enables and modes
     _mouseDownL = false;
     _mouseDownR = false;
     _mouseDownM = false;
@@ -307,12 +303,9 @@ void SLSceneView::setViewportFromRatio(const SLVec2i&  vpRatio,
     {
         _viewportRect.set(0, 0, _scrW, _scrH);
         _viewportAlign = VA_center;
-        //todo: when this call comes, scr2fb are maybe not updated yet (I initialized them with 1.0)
         if (_gui)
             _gui->onResize(_viewportRect.width,
-                           _viewportRect.height,
-                           _scr2fbX,
-                           _scr2fbY);
+                           _viewportRect.height);
         return;
     }
 
@@ -356,10 +349,7 @@ void SLSceneView::setViewportFromRatio(const SLVec2i&  vpRatio,
     {
         _viewportRect = vpRect;
         if (_gui)
-            _gui->onResize(_viewportRect.width,
-                           _viewportRect.height,
-                           _scr2fbX,
-                           _scr2fbY);
+            _gui->onResize(_viewportRect.width, _viewportRect.height);
     }
     else
         SL_EXIT_MSG("SLSceneView::viewport: Viewport is bigger than the screen!");
@@ -453,10 +443,7 @@ void SLSceneView::onInitialize()
 #endif
 
     if (_gui)
-        _gui->onResize(_viewportRect.width,
-                       _viewportRect.height,
-                       1.0f,
-                       1.0f);
+        _gui->onResize(_viewportRect.width, _viewportRect.height);
 }
 //-----------------------------------------------------------------------------
 /*!
@@ -508,7 +495,7 @@ SLbool SLSceneView::onPaint()
 {
     PROFILE_FUNCTION();
 
-    //SL_LOG("onPaint: -----------------------------------------------------");
+    // SL_LOG("onPaint: -----------------------------------------------------");
 
     _shadowMapTimesMS.set(_shadowMapTimeMS);
     _cullTimesMS.set(_cullTimeMS);
@@ -549,6 +536,7 @@ SLbool SLSceneView::onPaint()
     // Clear NO. of draw calls after UI creation
     SLGLVertexArray::totalDrawCalls          = 0;
     SLGLVertexArray::totalPrimitivesRendered = 0;
+    SLShadowMap::drawCalls                   = 0;
 
     if (_s && _camera)
     { // Render the 3D scenegraph by raytracing, pathtracing or OpenGL
@@ -572,8 +560,8 @@ SLbool SLSceneView::onPaint()
 
     // Finish Oculus framebuffer
     if (_s && _camera && _camera->projection() == P_stereoSideBySideD)
-        _s->oculus()->renderDistortion(_scrW * _scr2fbX,
-                                       _scrH * _scr2fbY,
+        _s->oculus()->renderDistortion(_scrW,
+                                       _scrH,
                                        _oculusFB.texID(),
                                        _camera->background().colors()[0]);
 
@@ -673,8 +661,8 @@ SLbool SLSceneView::draw3DGL(SLfloat elapsedTimeMS)
     startMS = GlobalTimer::timeMS();
 
     // Update camera animation separately (smooth transition on key movement)
-    //todo: ghm1: this is currently only necessary for walking animation (which is somehow always enabled)
-    //A problem is also, that it only updates the current camera. This is maybe not what we want for sensor rotated camera.
+    // todo: ghm1: this is currently only necessary for walking animation (which is somehow always enabled)
+    // A problem is also, that it only updates the current camera. This is maybe not what we want for sensor rotated camera.
     SLbool camUpdated = _camera->camUpdate(this, elapsedTimeMS);
 
     //////////////////////
@@ -707,7 +695,7 @@ SLbool SLSceneView::draw3DGL(SLfloat elapsedTimeMS)
     //////////////////////////
 
     // Render solid color, gradient or textured background from active camera
-    if (!_skybox)
+    if (!_s->skybox())
         _camera->background().render(_viewportRect.width, _viewportRect.height);
 
     // Change state (only when changed)
@@ -727,8 +715,8 @@ SLbool SLSceneView::draw3DGL(SLfloat elapsedTimeMS)
     else
     {
         _camera->setProjection(this, ET_center);
-        //todo: ghm1: set view is only called on the active camera. Then the camera animation is not updated
-        //of a camera the is not the current camera!
+        // todo: ghm1: set view is only called on the active camera. Then the camera animation is not updated
+        // of a camera the is not the current camera!
         _camera->setView(this, ET_center);
     }
 
@@ -757,8 +745,8 @@ SLbool SLSceneView::draw3DGL(SLfloat elapsedTimeMS)
     // 8. Draw skybox //
     ////////////////////
 
-    if (_skybox)
-        _skybox->drawAroundCamera(this);
+    if (_s->skybox())
+        _s->skybox()->drawAroundCamera(this);
 
     ////////////////////////////
     // 9. Draw all visible nodes
@@ -777,14 +765,14 @@ SLbool SLSceneView::draw3DGL(SLfloat elapsedTimeMS)
         _camera->setViewport(this, ET_right);
 
         // Only draw backgrounds for stereo projections in different viewports
-        if (!_skybox && _camera->projection() < P_stereoLineByLine)
+        if (!_s->skybox() && _camera->projection() < P_stereoLineByLine)
             _camera->background().render(_viewportRect.width, _viewportRect.height);
 
         _camera->setProjection(this, ET_right);
         _camera->setView(this, ET_right);
         stateGL->depthTest(true);
-        if (_skybox)
-            _skybox->drawAroundCamera(this);
+        if (_s->skybox())
+            _s->skybox()->drawAroundCamera(this);
         draw3DGLAll();
     }
 
@@ -1016,17 +1004,14 @@ void SLSceneView::draw3DGLLinesOverlay(SLVNode& nodes)
             }
             else if (drawBit(SL_DB_BRECT) || node->drawBit(SL_DB_BRECT))
             {
-                node->aabb()->calculateRectSS(_scr2fbX, _scr2fbY);
+                node->aabb()->calculateRectSS();
 
                 SLMat4f prevProjMat = stateGL->projectionMatrix;
                 stateGL->pushModelViewMatrix();
                 SLfloat w2 = (SLfloat)_scrWdiv2;
                 SLfloat h2 = (SLfloat)_scrHdiv2;
                 stateGL->projectionMatrix.ortho(-w2, w2, -h2, h2, 1.0f, -1.0f);
-                stateGL->viewportFB(0,
-                                    0,
-                                    (int)(_scrW * _scr2fbX),
-                                    (int)(_scrH * _scr2fbY));
+                stateGL->viewport(0, 0, _scrW, _scrH);
                 stateGL->modelViewMatrix.identity();
                 stateGL->modelViewMatrix.translate(-w2, h2, 1.0f);
                 stateGL->depthMask(false); // Freeze depth buffer for blending
@@ -1090,10 +1075,7 @@ void SLSceneView::draw2DGL()
     {
         // 1. Set Projection & View
         stateGL->projectionMatrix.ortho(-w2, w2, -h2, h2, 1.0f, -1.0f);
-        stateGL->viewportFB(0,
-                            0,
-                            (int)(_scrW * _scr2fbX),
-                            (int)(_scrH * _scr2fbY));
+        stateGL->viewport(0, 0, _scrW, _scrH);
 
         // 2. Pseudo 2D Frustum Culling
         for (auto material : _visibleMaterials2D)
@@ -1890,7 +1872,7 @@ SLbool SLSceneView::draw3DRT()
         {
             // Update transforms and AABBs
             // @Todo: causes multithreading bug in RT
-            //s->root3D()->needUpdate();
+            // s->root3D()->needUpdate();
 
             // Do software skinning on all changed skeletons
             _s->root3D()->updateMeshAccelStructs();
@@ -1943,7 +1925,7 @@ SLbool SLSceneView::draw3DPT()
         {
             // Update transforms and AABBs
             // @Todo: causes multithreading bug in RT
-            //s->root3D()->needUpdate();
+            // s->root3D()->needUpdate();
 
             // Do software skinning on all changed skeletons
             _s->root3D()->updateMeshAccelStructs();
@@ -2055,7 +2037,7 @@ SLSceneView::draw3DCT draws all 3D content with voxel cone tracing.
 */
 SLbool SLSceneView::draw3DCT()
 {
-    //SL_LOG("Rendering VXC ");
+    // SL_LOG("Rendering VXC ");
     SLfloat startMS = GlobalTimer::timeMS();
 
     SLbool rendered = _conetracer->render(this);
@@ -2079,8 +2061,8 @@ void SLSceneView::saveFrameBufferAsImage(SLstring pathFilename, cv::Size targetS
 {
     if (_screenCaptureWaitFrames == 0)
     {
-        SLint fbW = (SLint)(_viewportRect.width * _scr2fbX);
-        SLint fbH = (SLint)(_viewportRect.height * _scr2fbY);
+        SLint fbW = _viewportRect.width;
+        SLint fbH = _viewportRect.height;
 
         GLsizei nrChannels = 3;
         GLsizei stride     = nrChannels * fbW;

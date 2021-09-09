@@ -4,20 +4,20 @@
 //             the equirectangular map as if it is a cube map. Based on the
 //             physically based rendering (PBR) tutorial with GLSL by Joey de
 //             Vries on https://learnopengl.com/PBR/IBL/Diffuse-irradiance
-//  Author:    Carlos Arauz
+//  Authors:   Carlos Arauz, Marcus Hudritsch
 //  Date:      April 2018
-//             This software is provide under the GNU General Public License
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
 precision highp float;
 
 //-----------------------------------------------------------------------------
-in      vec3        v_P_WS;            // sample direction in world space
+in      vec3        v_P_WS;               // sample direction in world space
 
 uniform sampler2D   u_textureEnvCubemap0; // Equirectagular map
 
-out     vec4        o_fragColor;       // output fragment color
+out     vec4        o_fragColor;          // output fragment color
 //-----------------------------------------------------------------------------
 const   vec2        invAtan = vec2(0.1591, 0.3183);
 //-----------------------------------------------------------------------------

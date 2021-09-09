@@ -2,10 +2,10 @@
 //  File:      PBR_IrradianceConvolution.frag
 //  Purpose:   GLSL fragment program to generate an irradiance map by
 //             convoluting of an environment map.
-//  Author:    Carlos Arauz
+//  Author:
 //  Date:      April 2018
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Carlos Arauz, Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 

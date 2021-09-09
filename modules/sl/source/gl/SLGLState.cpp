@@ -1,11 +1,10 @@
 //#############################################################################
 //  File:      SLGLState.cpp
 //  Purpose:   Singleton class implementation for global OpenGL replacement
-//  Author:    Marcus Hudritsch
 //  Date:      July 2014
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -81,7 +80,7 @@ void SLGLState::initAll()
     _polygonOffsetPointEnabled = false;
     _polygonOffsetLineEnabled  = false;
     _polygonOffsetFillEnabled  = false;
-    _viewportFB.set(-1, -1, -1, -1);
+    _viewport.set(-1, -1, -1, -1);
     _clearColor.set(-1, -1, -1, -1);
 
     // Reset all cached states to an invalid state
@@ -449,15 +448,15 @@ void SLGLState::polygonOffsetFill(SLbool enabled, SLfloat factor, SLfloat units)
 //-----------------------------------------------------------------------------
 /*! SLGLState::viewport sets the OpenGL viewport position and size
  */
-void SLGLState::viewportFB(SLint x, SLint y, SLsizei width, SLsizei height)
+void SLGLState::viewport(SLint x, SLint y, SLsizei width, SLsizei height)
 {
-    if (_viewportFB.x != x ||
-        _viewportFB.y != y ||
-        _viewportFB.z != width ||
-        _viewportFB.w != height)
+    if (_viewport.x != x ||
+        _viewport.y != y ||
+        _viewport.z != width ||
+        _viewport.w != height)
     {
         glViewport(x, y, width, height);
-        _viewportFB.set(x, y, width, height);
+        _viewport.set(x, y, width, height);
 
         GET_GL_ERROR;
     }

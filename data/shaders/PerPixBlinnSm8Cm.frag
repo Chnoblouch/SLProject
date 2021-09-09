@@ -3,10 +3,9 @@
 //  Purpose:   GLSL pixel shader for per pixel Blinn-Phong lighting with 
 //             shadow mapping for max. 8 lights incl. cubemaps for point lights
 //             by Joey de Vries.
-//  Author:    Michel Schertenleib, Marcus Hudritsch
 //  Date:      Winter 2019
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:  Michel Schertenleib, Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 

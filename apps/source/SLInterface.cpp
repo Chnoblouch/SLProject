@@ -1,11 +1,10 @@
 //#############################################################################
 //  File:      sl/SLInterface.cpp
 //  Purpose:   Implementation of the main Scene Library C-Interface.
-//  Author:    Marcus Hudritsch
 //  Date:      July 2014
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -268,19 +267,15 @@ bool slUpdateParallelJob()
 }
 //-----------------------------------------------------------------------------
 /*!
- * Draws all scene views and updates the screen to framebuffer factors.
- * @param scr2fbX Horizontal screen to framebuffer factor (default 1.0f)
- * @param scr2fbY Vertical screen to framebuffer factor (default 1.0f)
+ * Draws all scene views
  * @return return true if another repaint is needed.
  */
-bool slPaintAllViews(float scr2fbX, float scr2fbY)
+bool slPaintAllViews()
 {
     bool needUpdate = false;
 
     for (auto sv : AppDemo::sceneViews)
     {
-        sv->scr2fb(scr2fbX, scr2fbY);
-
         // Save previous frame as image
         if (sv->screenCaptureIsRequested())
         {

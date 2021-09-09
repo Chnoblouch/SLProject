@@ -1,10 +1,10 @@
 //#############################################################################
 //  File:      SLSkybox
-//  Author:    Marcus Hudritsch
+//  Authors:   Marcus Hudritsch
 //  Date:      December 2017
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -48,11 +48,16 @@ public:
 
     ~SLSkybox() { ; }
 
+    // Getters
+    SLGLTexture* environmentCubemap() { return _environmentCubemap; }
+    SLGLTexture* irradianceCubemap() { return _irradianceCubemap; }
+    SLGLTexture* roughnessCubemap() { return _roughnessCubemap; }
+    SLGLTexture* brdfLUTTexture() { return _brdfLUTTexture; }
+    SLbool       isHDR() { return _isHDR; }
 
-    SLGLTexture* getTexture() { return mesh()->mat()->textures(TT_diffuse)[0]; };
+    void    drawAroundCamera(SLSceneView* sv);
     SLCol4f colorAtDir(const SLVec3f& dir);
-
-    void drawAroundCamera(SLSceneView* sv);
+    void    passToUniforms(SLGLProgram* program);
 
     const std::vector<SLGLTexture*> getTextures() { return _textures; };
 

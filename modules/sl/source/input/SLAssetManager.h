@@ -1,10 +1,10 @@
 //#############################################################################
 //  File:      SLAssetManager.h
-//  Author:    Michael Goettlicher
+//  Authors:   Michael Goettlicher
 //  Date:      Feb 2020
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -33,10 +33,13 @@ public:
     ~SLAssetManager();
     
     void clear();
+
     //! for all assets, clear gpu data
     void deleteDataGpu();
+
     //! Removes the specified mesh from the meshes resource vector.
     bool removeMesh(SLMesh* mesh);
+
     //! Returns the pointer to shader program if found by name
     SLGLProgram* getProgramByName(const string& programName);
     

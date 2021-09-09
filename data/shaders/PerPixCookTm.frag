@@ -3,10 +3,9 @@
 //  Purpose:   GLSL fragment shader for Cook-Torrance physical based rendering.
 //             Based on the physically based rendering (PBR) tutorial with GLSL
 //             from Joey de Vries on https://learnopengl.com/#!PBR/Theory
-//  Author:    Marcus Hudritsch
 //  Date:      July 2017
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -51,7 +50,7 @@ const float PI = 3.14159265359;
 // ----------------------------------------------------------------------------
 vec3 getNormalFromMap()
 {
-    vec3 tangentNormal = texture(u_matTexture1, v_uv1).xyz * 2.0 - 1.0;
+    vec3 tangentNormal = texture(u_matTextureNormal0, v_uv1).xyz * 2.0 - 1.0;
 
     vec3 Q1  = dFdx(v_P_VS);
     vec3 Q2  = dFdy(v_P_VS);

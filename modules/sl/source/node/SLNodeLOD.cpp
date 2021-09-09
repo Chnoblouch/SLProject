@@ -1,10 +1,9 @@
 //#############################################################################
 //  File:      SLNodeLOD.cpp
-//  Author:    Jan Dellsperger, Marcus Hudritsch
 //  Date:      July 2021
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Jan Dellsperger, Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -52,7 +51,7 @@ void SLNodeLOD::cullChildren3D(SLSceneView* sv)
 {
     if (!_children.empty())
     {
-        SLfloat rectCoverage = _aabb.rectCoverageInSS(sv->scr2fbX(), sv->scr2fbY());
+        SLfloat rectCoverage = _aabb.rectCoverageInSS();
 
         // Set visibility (draw-bit SL_DB_HIDDEN) for each level
         for (SLint i = 0; i < _children.size(); ++i)

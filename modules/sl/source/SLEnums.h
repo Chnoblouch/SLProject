@@ -1,10 +1,9 @@
 //#############################################################################
 //  File:      sl/SLEnums.h
-//  Author:    Marcus Hudritsch
 //  Date:      July 2014
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -106,8 +105,8 @@ enum SLSceneID
     SID_ShaderPerPixelBlinn,
     SID_ShaderPerVertexWave,
     SID_ShaderCook,
-    SID_ShaderIBL,
     SID_ShaderCookAuto,
+    SID_ShaderIBL,
     SID_ShaderIBLAuto,
     SID_ShaderBumpNormal,
     SID_ShaderBumpParallax,
@@ -171,11 +170,10 @@ enum SLSceneID
     SID_Benchmark2_MassiveNodes,
     SID_Benchmark3_NodeAnimations,
     SID_Benchmark4_SkinnedAnimations,
-    SID_Benchmark5_LOD,
-    SID_Benchmark6_LOD,
+    SID_Benchmark5_LevelOfDetail,
 
     SID_ErlebARBielBFH,
-    SID_ErlebARChristoffel,
+    SID_ErlebARBernChristoffel,
     SID_ErlebARAugustaRauricaTmp,
     SID_ErlebARAugustaRauricaTht,
     SID_ErlebARAugustaRauricaTmpTht,
@@ -183,7 +181,6 @@ enum SLSceneID
     SID_ErlebARAventicumCigognier,
     SID_ErlebARAventicumTheatre,
     SID_ErlebARSutzKirchrain18,
-    SID_ErlebAREvilardCheminDuRoc2,
 
     SID_Maximal
 };

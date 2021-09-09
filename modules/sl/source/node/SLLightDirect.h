@@ -1,10 +1,9 @@
 //#############################################################################
 //  File:      SLLightDirect.h
-//  Author:    Marcus Hudritsch
 //  Date:      July 2016
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -74,10 +73,9 @@ public:
                             float   clipFar  = 20.0f,
                             SLVec2f size     = SLVec2f(8, 8),
                             SLVec2i texSize  = SLVec2i(1024, 1024)) override;
-    void    createShadowMap(SLCamera* camera,
-                            SLVec2f   size        = SLVec2f(8, 8),
-                            SLVec2i   texSize     = SLVec2i(1024, 1024),
-                            int       numCascades = 4) override;
+    void    createShadowMapAutoSize(SLCamera* camera,
+                                    SLVec2i   texSize     = SLVec2i(1024, 1024),
+                                    int       numCascades = 4) override;
     SLCol4f calculateSunLight(SLfloat standardPower);
 
     // Setters

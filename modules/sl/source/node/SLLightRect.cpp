@@ -1,10 +1,10 @@
 //#############################################################################
 //  File:      SLLightRect.cpp
-//  Author:    Marcus Hudritsch
+//  Authors:   Marcus Hudritsch
 //  Date:      July 2014
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -105,7 +105,7 @@ SLLightRect::hitRec(SLRay* ray)
     if (ray->type == SHADOW) return false;
 
     // only allow intersection with primary rays (no lights in reflections)
-    //if (ray->type!=PRIMARY) return false;
+    // if (ray->type!=PRIMARY) return false;
 
     // call the intersection routine of the node
     return SLNode::hitRec(ray);
@@ -286,36 +286,44 @@ SLfloat SLLightRect::shadowTestMC(SLRay*         ray,       // ray of hit point
     return (shadowRay.length < spDistWS) ? 0.0f : 1.0f;
 }
 //-----------------------------------------------------------------------------
-void SLLightRect::createShadowMap(float   clipNear,
-                                  float   clipFar,
+/*! Creates an fixed sized standard shadow map for a rectangular light.
+ * @param lightClipNear The light frustums near clipping distance
+ * @param lightClipFar The light frustums near clipping distance
+ * @param size Ignored for rectangular lights
+ * @param texSize Shadow texture map size
+ */
+void SLLightRect::createShadowMap(float   lightClipNear,
+                                  float   lightClipFar,
                                   SLVec2f size,
                                   SLVec2i texSize)
 {
     if (!_shadowMap)
         delete _shadowMap;
 
-    _shadowMap = new SLShadowMap(P_monoPerspective,
-                                 this,
-                                 clipNear,
-                                 clipFar,
+    _shadowMap = new SLShadowMap(this,
+                                 lightClipNear,
+                                 lightClipFar,
                                  size,
                                  texSize);
 }
 //-----------------------------------------------------------------------------
-void SLLightRect::createShadowMap(SLCamera* camera,
-                                  SLVec2f   size,
-                                  SLVec2i   texSize,
-                                  int       numCascades)
+/*! Creates an automatic sized shadow map for the rectangular light.
+ * @param camera Pointer to the camera for witch the shadow map gets sized
+ * @param texSize Shadow texture map size (equal for all cascades)
+ * @param numCascades This value is ignored (default 0)
+ */
+void SLLightRect::createShadowMapAutoSize(SLCamera* camera,
+                                          SLVec2i   texSize,
+                                          int       numCascades)
 {
     (void)numCascades;
     if (!_shadowMap)
         delete _shadowMap;
 
-    _shadowMap = new SLShadowMap(P_monoPerspective,
-                                 this,
+    _shadowMap = new SLShadowMap(this,
                                  camera,
-                                 size,
-                                 texSize);
+                                 texSize,
+                                 0);
 }
 //-----------------------------------------------------------------------------
 void SLLightRect::samples(const SLVec2i samples)

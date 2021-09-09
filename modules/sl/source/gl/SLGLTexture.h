@@ -1,10 +1,9 @@
 //#############################################################################
 //  File:      SLGLTexture.h
-//  Author:    Marcus Hudritsch, Martin Christen
 //  Date:      July 2014
 //  Codestyle: https://github.com/cpvrlab/SLProject/wiki/SLProject-Coding-Style
-//  Copyright: Marcus Hudritsch
-//             This software is provide under the GNU General Public License
+//  Authors:   Marcus Hudritsch, Martin Christen
+//  License:   This software is provided under the GNU General Public License
 //             Please visit: http://opensource.org/licenses/GPL-3.0
 //#############################################################################
 
@@ -64,7 +63,12 @@ enum SLTextureType
     TT_irradianceCubemap,  // irradiance cubemap generated from HDR Textures
     TT_roughnessCubemap,   // prefilter roughness cubemap
     TT_brdfLUT,            // BRDF 2D look up table Texture
+<<<<<<< HEAD
     TT_nbTextureType
+=======
+    TT_videoBkgd,          // Video background
+    TT_numTextureType      // New texture types must be before TT_numTextureType
+>>>>>>> develop
 };
 //-----------------------------------------------------------------------------
 //! Texture object for OpenGL texturing
@@ -163,8 +167,13 @@ public:
     void minFiler(SLint minF) { _min_filter = minF; } // must be called before build
     void magFiler(SLint magF) { _mag_filter = magF; } // must be called before build
     void needsUpdate(SLbool update) { _needsUpdate = update; }
+
     // must be called before build and makes only sense for SL_TEXTURE_EXTERNAL
-    void textureSize(int width, int height) { _width = width; _height = height; }
+    void textureSize(int width, int height)
+    {
+        _width  = width;
+        _height = height;
+    }
 
     //! If deleteImageAfterBuild is set to true you won't be able to ray trace the scene
     void deleteImageAfterBuild(SLbool delImg) { _deleteImageAfterBuild = delImg; }
