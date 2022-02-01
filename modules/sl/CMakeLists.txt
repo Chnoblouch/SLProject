@@ -248,6 +248,15 @@ file(GLOB sources
         source/ray/SLRaySamples2D.h
         source/ray/SLRaytracer.cpp
         source/ray/SLRaytracer.h
+        source/renderer/SLRenderer.h
+        source/renderer/SLRendererGL.h
+        source/renderer/SLRendererGL.cpp
+        source/renderer/SLRendererRaytracing.h
+        source/renderer/SLRendererRaytracing.cpp
+        source/renderer/SLRendererPathtracing.h
+        source/renderer/SLRendererPathtracing.cpp
+        source/renderer/SLRendererConetracing.h
+        source/renderer/SLRendererConetracing.cpp
         )
 
 if (SL_BUILD_WAI)
@@ -372,6 +381,7 @@ target_include_directories(${target}
             ${SL_PROJECT_ROOT}/modules/sl/source/node
             ${SL_PROJECT_ROOT}/modules/sl/source/optix
             ${SL_PROJECT_ROOT}/modules/sl/source/ray
+            ${SL_PROJECT_ROOT}/modules/sl/source/renderer
             ${SL_PROJECT_ROOT}/modules/sl/source
             ${SL_PROJECT_ROOT}/modules/sl/cuda
             ${SL_PROJECT_ROOT}/modules/math/source

@@ -2305,10 +2305,10 @@ void AppDemoGui::buildMenuBar(SLScene* s, SLSceneView* sv)
                 sv->renderType(RT_gl);
 
             if (ImGui::MenuItem("Ray Tracing", "R", rType == RT_rt))
-                sv->startRaytracing(5);
+                sv->renderType(RT_rt);
 
             if (ImGui::MenuItem("Path Tracing", "P", rType == RT_pt))
-                sv->startPathtracing(5, 10);
+                sv->renderType(RT_pt);
 
 #ifdef SL_HAS_OPTIX
             if (ImGui::MenuItem("Ray Tracing with OptiX", "Shift-R", rType == RT_optix_rt))
@@ -2324,7 +2324,7 @@ void AppDemoGui::buildMenuBar(SLScene* s, SLSceneView* sv)
             if (gl3wIsSupported(4, 4))
             {
                 if (ImGui::MenuItem("Cone Tracing (CT)", "C", rType == RT_ct))
-                    sv->startConetracing();
+                    sv->renderType(RT_ct);
             }
             else
 #endif
@@ -2403,17 +2403,17 @@ void AppDemoGui::buildMenuBar(SLScene* s, SLSceneView* sv)
                     if (ImGui::MenuItem("1.00", nullptr, rt->resolutionFactorPC() == 100))
                     {
                         rt->resolutionFactor(1.0f);
-                        sv->startRaytracing(rt->maxDepth());
+//                        sv->startRaytracing(rt->maxDepth());
                     }
                     if (ImGui::MenuItem("0.50", nullptr, rt->resolutionFactorPC() == 50))
                     {
                         rt->resolutionFactor(0.5f);
-                        sv->startRaytracing(rt->maxDepth());
+//                        sv->startRaytracing(rt->maxDepth());
                     }
                     if (ImGui::MenuItem("0.25", nullptr, rt->resolutionFactorPC() == 25))
                     {
                         rt->resolutionFactor(0.25f);
-                        sv->startRaytracing(rt->maxDepth());
+//                        sv->startRaytracing(rt->maxDepth());
                     }
 
                     ImGui::EndMenu();
@@ -2422,7 +2422,7 @@ void AppDemoGui::buildMenuBar(SLScene* s, SLSceneView* sv)
                 if (ImGui::MenuItem("Parallel distributed", nullptr, rt->doDistributed()))
                 {
                     rt->doDistributed(!rt->doDistributed());
-                    sv->startRaytracing(rt->maxDepth());
+//                    sv->startRaytracing(rt->maxDepth());
                 }
 
                 if (ImGui::MenuItem("Continuously", nullptr, rt->doContinuous()))
@@ -2434,16 +2434,16 @@ void AppDemoGui::buildMenuBar(SLScene* s, SLSceneView* sv)
                 if (ImGui::MenuItem("Fresnel Reflection", nullptr, rt->doFresnel()))
                 {
                     rt->doFresnel(!rt->doFresnel());
-                    sv->startRaytracing(rt->maxDepth());
+//                    sv->startRaytracing(rt->maxDepth());
                 }
 
                 if (ImGui::BeginMenu("Max. Depth"))
                 {
-                    if (ImGui::MenuItem("1", nullptr, rt->maxDepth() == 1)) sv->startRaytracing(1);
-                    if (ImGui::MenuItem("2", nullptr, rt->maxDepth() == 2)) sv->startRaytracing(2);
-                    if (ImGui::MenuItem("3", nullptr, rt->maxDepth() == 3)) sv->startRaytracing(3);
-                    if (ImGui::MenuItem("5", nullptr, rt->maxDepth() == 5)) sv->startRaytracing(5);
-                    if (ImGui::MenuItem("Max. Contribution", nullptr, rt->maxDepth() == 0)) sv->startRaytracing(0);
+                    if (ImGui::MenuItem("1", nullptr, rt->maxDepth() == 1)) sv->raytracer()->maxDepth(1);
+                    if (ImGui::MenuItem("2", nullptr, rt->maxDepth() == 2)) sv->raytracer()->maxDepth(2);
+                    if (ImGui::MenuItem("3", nullptr, rt->maxDepth() == 3)) sv->raytracer()->maxDepth(3);
+                    if (ImGui::MenuItem("5", nullptr, rt->maxDepth() == 5)) sv->raytracer()->maxDepth(5);
+                    if (ImGui::MenuItem("Max. Contribution", nullptr, rt->maxDepth() == 0)) sv->raytracer()->maxDepth(0);
 
                     ImGui::EndMenu();
                 }
@@ -2467,7 +2467,7 @@ void AppDemoGui::buildMenuBar(SLScene* s, SLSceneView* sv)
                 if (ImGui::SliderFloat("Gamma", &gamma, 0.1f, 3.0f, "%.1f"))
                 {
                     rt->gamma(gamma);
-                    sv->startRaytracing(5);
+//                    sv->startRaytracing(5);
                 }
                 ImGui::PopItemWidth();
 
@@ -2544,17 +2544,17 @@ void AppDemoGui::buildMenuBar(SLScene* s, SLSceneView* sv)
                     if (ImGui::MenuItem("1.00", nullptr, pt->resolutionFactorPC() == 100))
                     {
                         pt->resolutionFactor(1.0f);
-                        sv->startPathtracing(5, pt->aaSamples());
+//                        sv->startPathtracing(5, pt->aaSamples());
                     }
                     if (ImGui::MenuItem("0.50", nullptr, pt->resolutionFactorPC() == 50))
                     {
                         pt->resolutionFactor(0.5f);
-                        sv->startPathtracing(5, pt->aaSamples());
+//                        sv->startPathtracing(5, pt->aaSamples());
                     }
                     if (ImGui::MenuItem("0.25", nullptr, pt->resolutionFactorPC() == 25))
                     {
                         pt->resolutionFactor(0.25f);
-                        sv->startPathtracing(5, pt->aaSamples());
+//                        sv->startPathtracing(5, pt->aaSamples());
                     }
 
                     ImGui::EndMenu();
@@ -2562,11 +2562,11 @@ void AppDemoGui::buildMenuBar(SLScene* s, SLSceneView* sv)
 
                 if (ImGui::BeginMenu("NO. of Samples"))
                 {
-                    if (ImGui::MenuItem("1", nullptr, pt->aaSamples() == 1)) sv->startPathtracing(5, 1);
-                    if (ImGui::MenuItem("10", nullptr, pt->aaSamples() == 10)) sv->startPathtracing(5, 10);
-                    if (ImGui::MenuItem("100", nullptr, pt->aaSamples() == 100)) sv->startPathtracing(5, 100);
-                    if (ImGui::MenuItem("1000", nullptr, pt->aaSamples() == 1000)) sv->startPathtracing(5, 1000);
-                    if (ImGui::MenuItem("10000", nullptr, pt->aaSamples() == 10000)) sv->startPathtracing(5, 10000);
+                    if (ImGui::MenuItem("1", nullptr, pt->aaSamples() == 1)) sv->pathtracer()->aaSamples(1);
+                    if (ImGui::MenuItem("10", nullptr, pt->aaSamples() == 10)) sv->pathtracer()->aaSamples(10);
+                    if (ImGui::MenuItem("100", nullptr, pt->aaSamples() == 100)) sv->pathtracer()->aaSamples(100);
+                    if (ImGui::MenuItem("1000", nullptr, pt->aaSamples() == 1000)) sv->pathtracer()->aaSamples(1000);
+                    if (ImGui::MenuItem("10000", nullptr, pt->aaSamples() == 10000)) sv->pathtracer()->aaSamples(10000);
 
                     ImGui::EndMenu();
                 }
@@ -2574,13 +2574,13 @@ void AppDemoGui::buildMenuBar(SLScene* s, SLSceneView* sv)
                 if (ImGui::MenuItem("Direct illumination", nullptr, pt->calcDirect()))
                 {
                     pt->calcDirect(!pt->calcDirect());
-                    sv->startPathtracing(5, 10);
+//                    sv->startPathtracing(5, 10);
                 }
 
                 if (ImGui::MenuItem("Indirect illumination", nullptr, pt->calcIndirect()))
                 {
                     pt->calcIndirect(!pt->calcIndirect());
-                    sv->startPathtracing(5, 10);
+//                    sv->startPathtracing(5, 10);
                 }
 
                 if (ImGui::MenuItem("Save Rendered Image"))
@@ -2591,7 +2591,7 @@ void AppDemoGui::buildMenuBar(SLScene* s, SLSceneView* sv)
                 if (ImGui::SliderFloat("Gamma", &gamma, 0.1f, 3.0f, "%.1f"))
                 {
                     pt->gamma(gamma);
-                    sv->startPathtracing(5, 1);
+//                    sv->startPathtracing(5, 1);
                 }
                 ImGui::PopItemWidth();
 

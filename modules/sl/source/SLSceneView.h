@@ -26,6 +26,12 @@
 #include <SLUiInterface.h>
 #include <unordered_set>
 
+#include <SLRenderer.h>
+#include <SLRendererGL.h>
+#include <SLRendererRaytracing.h>
+#include <SLRendererPathtracing.h>
+#include <SLRendererConetracing.h>
+
 //-----------------------------------------------------------------------------
 class SLCamera;
 class SLLight;
@@ -67,6 +73,8 @@ class SLSceneView : public SLObject
     friend class SLRaytracer;
     friend class SLOptixRaytracer;
     friend class SLPathtracer;
+    friend class SLRendererGL;
+    friend class SLRendererConetracing;
 
 public:
     SLSceneView(SLScene* s, int dpi, SLInputManager& inputManager);
@@ -105,16 +113,8 @@ public:
     virtual SLbool onCharInput(SLuint c);
 
     // Drawing subroutines
-    SLbool draw3DGL(SLfloat elapsedTimeSec);
-    void   draw3DGLAll();
-    void   draw3DGLNodes(SLVNode& nodes, SLbool alphaBlended, SLbool depthSorted);
-    void   draw3DGLLines(SLVNode& nodes);
-    void   draw3DGLLinesOverlay(SLVNode& nodes);
-    void   draw2DGL();
-    void   draw2DGLNodes();
-    SLbool draw3DRT();
-    SLbool draw3DPT();
-    SLbool draw3DCT();
+    void draw2DGL();
+    void draw2DGLNodes();
 
     // SceneView camera
     void   initSceneViewCamera(const SLVec3f& dir  = -SLVec3f::AXISZ,
@@ -126,14 +126,12 @@ public:
     // Misc.
     SLstring windowTitle();
     void     printStats() { _stats3D.print(); }
-    void     startRaytracing(SLint maxDepth);
-    void     startPathtracing(SLint maxDepth, SLint samples);
-    void     startConetracing();
     void     setViewportFromRatio(const SLVec2i&  vpRatio,
                                   SLViewportAlign vpAlignment,
                                   SLbool          vpSameAsVideo);
-    void     initConeTracer(SLstring shaderDir);
     void     saveFrameBufferAsImage(SLstring pathFilename, cv::Size targetSize = cv::Size(-1, -1));
+    void     initConeTracer(SLstring shaderDir);
+    void     updateRenderer();
 
     // Callback routines
     cbOnWndUpdate      onWndUpdate;        //!< C-Callback for app for intermediate window repaint
@@ -149,7 +147,11 @@ public:
     void doDepthTest(SLbool doDT) { _doDepthTest = doDT; }
     void doFrustumCulling(SLbool doFC) { _doFrustumCulling = doFC; }
     void doAlphaSorting(SLbool doAS) { _doAlphaSorting = doAS; }
-    void renderType(SLRenderType rt) { _renderType = rt; }
+    void renderType(SLRenderType rt)
+    {
+        _renderType = rt;
+        updateRenderer();
+    }
     void viewportSameAsVideo(bool sameAsVideo) { _viewportSameAsVideo = sameAsVideo; }
     void screenCaptureIsRequested(bool doScreenCap)
     {
@@ -189,9 +191,9 @@ public:
     SLVNode&        nodesOpaque2D() { return _nodesOpaque2D; }
     SLVNode&        nodesBlended2D() { return _nodesBlended2D; }
     SLVNode&        nodesOverdrawn() { return _nodesOverdrawn; }
-    SLRaytracer*    raytracer() { return &_raytracer; }
-    SLPathtracer*   pathtracer() { return &_pathtracer; }
-    SLGLConetracer* conetracer() { return _conetracer.get(); }
+    SLRaytracer*    raytracer() { return _rendererRT->raytracer(); }
+    SLPathtracer*   pathtracer() { return _rendererPT->pathtracer(); }
+    SLGLConetracer* conetracer() { return _rendererCT->conetracer(); }
     SLRenderType    renderType() const { return _renderType; }
     SLGLOculusFB*   oculusFB() { return &_oculusFB; }
     SLDrawBits*     drawBits() { return &_drawBits; }
@@ -276,11 +278,14 @@ protected:
     SLVNode _nodesBlended3D; //!< Vector of visible blended nodes rendered in 3D
     SLVNode _nodesOverdrawn; //!< Vector of helper nodes drawn over all others
 
-    SLRaytracer                     _raytracer;  //!< Whitted style raytracer
-    SLbool                          _stopRT;     //!< Flag to stop the RT
-    SLPathtracer                    _pathtracer; //!< Pathtracer
-    SLbool                          _stopPT;     //!< Flag to stop the PT
-    std::unique_ptr<SLGLConetracer> _conetracer; //!< Conetracer CT
+    SLRendererGL*          _rendererGL = new SLRendererGL(this);
+    SLRendererRaytracing*  _rendererRT = new SLRendererRaytracing(this);
+    SLRendererPathtracing* _rendererPT = new SLRendererPathtracing(this);
+    SLRendererConetracing* _rendererCT = nullptr;
+    SLRenderer*            _renderer   = _rendererGL;
+
+    SLbool _stopRT; //!< Flag to stop the RT
+    SLbool _stopPT; //!< Flag to stop the PT
 
 #ifdef SL_HAS_OPTIX
     SLOptixRaytracer  _optixRaytracer;  //!< Whitted style raytracer with Optix
